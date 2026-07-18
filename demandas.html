@@ -205,6 +205,33 @@
     text-align:center;
   }
 
+  /* BUSCA */
+  .secao-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .campo-busca{
+    flex: 0 1 320px;
+    padding: 9px 14px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--texto);
+    background: var(--fundo);
+  }
+
+  .campo-busca:focus{
+    outline: 2px solid var(--verde-destaque);
+    outline-offset: 1px;
+    background: #fff;
+  }
+
   /* EMPRESAS grid */
   .empresas-grid{
     display:grid;
@@ -748,7 +775,10 @@
       <!-- OBRIGAÇÕES MENSAIS -->
       <section class="view" id="view-obrigacoes">
         <div class="card">
-          <h3 class="card-title">Obrigações do mês — por empresa</h3>
+          <div class="secao-header">
+            <h3 class="card-title" style="margin:0;">Obrigações do mês — por empresa</h3>
+            <input type="text" class="campo-busca" id="buscaObrigacoes" placeholder="Buscar empresa por nome, código ou CNPJ...">
+          </div>
           <div class="table-wrap">
             <table class="obrigacoes">
               <thead>
@@ -765,6 +795,7 @@
                 <!-- gerado via JS -->
               </tbody>
             </table>
+            <div class="empty-state" id="obrigacoesVazio" style="display:none;">Nenhuma empresa encontrada para essa busca.</div>
           </div>
         </div>
       </section>
@@ -856,10 +887,14 @@
       <!-- EMPRESAS -->
       <section class="view" id="view-empresas">
         <div class="card">
-          <h3 class="card-title">Carteira de empresas</h3>
+          <div class="secao-header">
+            <h3 class="card-title" style="margin:0;">Carteira de empresas</h3>
+            <input type="text" class="campo-busca" id="buscaEmpresas" placeholder="Buscar por nome, código ou CNPJ...">
+          </div>
           <div class="empresas-grid" id="empresasGrid">
             <!-- gerado via JS -->
           </div>
+          <div class="empty-state" id="empresasVazio" style="display:none;">Nenhuma empresa encontrada para essa busca.</div>
         </div>
       </section>
 
@@ -868,18 +903,111 @@
 </div>
 
 <script>
-  // ---------- DADOS FICTÍCIOS ----------
+  // ---------- CLIENTES DO ESCRITÓRIO ----------
   const empresas = [
-    { codigo: "EMP001", razaoSocial: "Alvorada Comércio de Alimentos Ltda", cnpj: "12.345.678/0001-90" },
-    { codigo: "EMP002", razaoSocial: "Bela Vista Materiais de Construção S.A.", cnpj: "23.456.789/0001-01" },
-    { codigo: "EMP003", razaoSocial: "Cedro Transportes e Logística Ltda", cnpj: "34.567.890/0001-12" },
-    { codigo: "EMP004", razaoSocial: "Diamante Confecções Ltda", cnpj: "45.678.901/0001-23" },
-    { codigo: "EMP005", razaoSocial: "Ébano Serviços de Limpeza Ltda", cnpj: "56.789.012/0001-34" },
-    { codigo: "EMP006", razaoSocial: "Flor do Norte Distribuidora Ltda", cnpj: "67.890.123/0001-45" },
-    { codigo: "EMP007", razaoSocial: "Girassol Papelaria e Escritório Ltda", cnpj: "78.901.234/0001-56" },
-    { codigo: "EMP008", razaoSocial: "Horizonte Tecnologia da Informação Ltda", cnpj: "89.012.345/0001-67" },
-    { codigo: "EMP009", razaoSocial: "Ipê Roxo Restaurante Ltda", cnpj: "90.123.456/0001-78" },
-    { codigo: "EMP010", razaoSocial: "Jamburana Metalúrgica Ltda", cnpj: "01.234.567/0001-89" }
+    { codigo: "EMP16", razaoSocial: "C DE QUEIROZ - TORRES", cnpj: "18.442.885/0001-44" },
+    { codigo: "EMP17", razaoSocial: "C DE QUEIROZ - V8", cnpj: "18.442.885/0002-25" },
+    { codigo: "EMP19", razaoSocial: "C DE QUEIROZ  - ADRIANOPOLIS", cnpj: "18.442.885/0005-78" },
+    { codigo: "EMP20", razaoSocial: "C DE QUEIROZ  - ALPHAVILLE", cnpj: "18.442.885/0006-59" },
+    { codigo: "EMP21", razaoSocial: "C DE QUEIROZ  - CDD", cnpj: "18.442.885/0007-30" },
+    { codigo: "EMP22", razaoSocial: "C DE QUEIROZ  - PARQUE 10", cnpj: "18.442.885/0008-10" },
+    { codigo: "EMP23", razaoSocial: "C DE QUEIROZ  - COROADO", cnpj: "18.442.885/0009-00" },
+    { codigo: "EMP24", razaoSocial: "C DE QUEIROZ  - PONTA NEGRA", cnpj: "18.442.885/0010-35" },
+    { codigo: "EMP25", razaoSocial: "C DE QUEIROZ  - PLANALTO", cnpj: "18.442.885/0011-16" },
+    { codigo: "EMP26", razaoSocial: "C DE QUEIROZ - PETROPOLIS", cnpj: "18.442.885/0012-05" },
+    { codigo: "EMP27", razaoSocial: "C DE QUEIROZ - RODRIGUES", cnpj: "18.442.885/0013-88" },
+    { codigo: "EMP194", razaoSocial: "C DE QUEIROZ - MARGARITA", cnpj: "18.442.885/0014-69" },
+    { codigo: "EMP28", razaoSocial: "C DE QUEIROZ - LARANJEIRAS 1", cnpj: "18.442.885/0015-40" },
+    { codigo: "EMP29", razaoSocial: "C DE QUEIROZ - ASSINPA", cnpj: "18.442.885/0016-20" },
+    { codigo: "EMP1", razaoSocial: "C DE QUEIROZ - CAMAPUA", cnpj: "18.442.885/0017-01" },
+    { codigo: "EMP2", razaoSocial: "C DE QUEIROZ - NOVO ALEIXO", cnpj: "18.442.885/0018-92" },
+    { codigo: "EMP3", razaoSocial: "C DE QUEIROZ - JACIRA", cnpj: "18.442.885/0019-73" },
+    { codigo: "EMP4", razaoSocial: "C DE QUEIROZ - BELEM", cnpj: "18.442.885/0020-07" },
+    { codigo: "EMP5", razaoSocial: "C DE QUEIROZ - SILVES", cnpj: "18.442.885/0021-98" },
+    { codigo: "EMP6", razaoSocial: "C DE QUEIROZ - SUMAUMA", cnpj: "18.442.885/0022-79" },
+    { codigo: "EMP193", razaoSocial: "C DE QUEIROZ - LARANJEIRAS 2", cnpj: "18.442.885/0023-50" },
+    { codigo: "EMP7", razaoSocial: "C DE QUEIROZ - TIRADENTES", cnpj: "18.442.885/0024-30" },
+    { codigo: "EMP8", razaoSocial: "C DE QUEIROZ - MORADA", cnpj: "18.442.885/0025-11" },
+    { codigo: "EMP30", razaoSocial: "C DE QUEIROZ - DJALMA 2", cnpj: "18.442.885/0026-00" },
+    { codigo: "EMP51", razaoSocial: "C DE QUEIROZ - BOM PRATO", cnpj: "18.442.885/0027-83" },
+    { codigo: "EMP202", razaoSocial: "C DE QUEIROZ - DOM PEDRO PREMIUM", cnpj: "18.442.885/0028-64" },
+    { codigo: "EMP54", razaoSocial: "J DE SOUZA SAID - JAPIIM", cnpj: "21.586.504/0001-05" },
+    { codigo: "EMP55", razaoSocial: "J DE SOUZA SAID - TORQUATO", cnpj: "21.586.504/0002-96" },
+    { codigo: "EMP56", razaoSocial: "J DE SOUZA SAID - COMPENSA", cnpj: "21.586.504/0003-77" },
+    { codigo: "EMP58", razaoSocial: "J DE SOUZA SAID - DOM PEDRO", cnpj: "21.586.504/0005-39" },
+    { codigo: "EMP59", razaoSocial: "J DE SOUZA SAID - CIDADE NOVA", cnpj: "21.586.504/0006-10" },
+    { codigo: "EMP60", razaoSocial: "J DE SOUZA SAID - CHEIK", cnpj: "21.586.504/0007-09" },
+    { codigo: "EMP61", razaoSocial: "J DE SOUZA SAID - TERRA NOVA", cnpj: "21.586.504/0008-81" },
+    { codigo: "EMP62", razaoSocial: "J DE SOUZA SAID - FRANCESES", cnpj: "21.586.504/0009-62" },
+    { codigo: "EMP63", razaoSocial: "J DE SOUZA SAID - ALLEGRO", cnpj: "21.586.504/0010-04" },
+    { codigo: "EMP64", razaoSocial: "J DE SOUZA SAID - CACHOEIRINHA", cnpj: "21.586.504/0011-87" },
+    { codigo: "EMP205", razaoSocial: "J DE SOUZA SAID - AV DO TURISMO", cnpj: "21.586.504/0012-68" },
+    { codigo: "EMP212", razaoSocial: "J DE SOUZA SAID - STO ANTONIO", cnpj: "21.586.504/0013-49" },
+    { codigo: "EMP213", razaoSocial: "J DE SOUZA SAID - BOULEVARD", cnpj: "21.586.504/0014-20" },
+    { codigo: "EMP217", razaoSocial: "L. DE F. LEITE LTDA - ACRE", cnpj: "07.959.016/0001-75" },
+    { codigo: "EMP218", razaoSocial: "L. DE F. LEITE LTDA - MANAUS", cnpj: "07.959016/0002-56" },
+    { codigo: "EMP219", razaoSocial: "L. DE F. LEITE LTDA - TABATINGA", cnpj: "07.959.016/0007-60" },
+    { codigo: "EMP220", razaoSocial: "L. DE F. LEITE LTDA - HUMAITA", cnpj: "07.959.016/0008-41" },
+    { codigo: "EMP221", razaoSocial: "L. DE F. LEITE LTDA - MANACAPURU", cnpj: "07.959.016/0009-22" },
+    { codigo: "EMP222", razaoSocial: "L. DE F. LEITE LTDA - PARINTINS", cnpj: "07.959.016/0013-09" },
+    { codigo: "EMP223", razaoSocial: "L. DE F. LEITE LTDA - AUTAZES", cnpj: "07.959016/0017-32" },
+    { codigo: "EMP224", razaoSocial: "L. DE F. LEITE LTDA - NHAMUNDA", cnpj: "07.959.016/0018-13" },
+    { codigo: "EMP225", razaoSocial: "L. DE F. LEITE LTDA - MANICORE", cnpj: "07.959.016/0019-02" },
+    { codigo: "EMP226", razaoSocial: "L. DE F. LEITE LTDA -TEFE", cnpj: "07.959.016/0021-19" },
+    { codigo: "EMP227", razaoSocial: "L. DE F. LEITE LTDA - ST ANTONIO DO ICA", cnpj: "07.959.016/0022-08" },
+    { codigo: "EMP228", razaoSocial: "L. DE F. LEITE LTDA - CARAUARI", cnpj: "07.959.016/0023-80" },
+    { codigo: "EMP229", razaoSocial: "L. DE F. LEITE LTDA - BARREIRINHA", cnpj: "07.959.016/0024-61" },
+    { codigo: "EMP230", razaoSocial: "L. DE F. LEITE LTDA - JUTAI", cnpj: "07.959.016/0025-42" },
+    { codigo: "EMP231", razaoSocial: "L. DE F. LEITE LTDA - SAO PAULO DE OLIVENCA", cnpj: "07.959.016/0026-23" },
+    { codigo: "EMP232", razaoSocial: "L. DE F. LEITE LTDA - NOVA OLINDA DO NORTE", cnpj: "07.959.016/0029-76" },
+    { codigo: "EMP233", razaoSocial: "L. DE F. LEITE LTDA - EIRUNEPE", cnpj: "07.959.016/0028-95" },
+    { codigo: "EMP234", razaoSocial: "L. DE F. LEITE LTDA - DOURADINA", cnpj: "07.959.016/0030-00" },
+    { codigo: "EMP239", razaoSocial: "L. DE F. LEITE LTDA - BENJAMIN CONSTANT", cnpj: "07.959.016/0031-90" },
+    { codigo: "EMP43", razaoSocial: "O NORDESTAO LTDA", cnpj: "84.493.311/0001-20" },
+    { codigo: "EMP49", razaoSocial: "GRACE COMERCIO LTDA", cnpj: "04.898.636/0001-53" },
+    { codigo: "EMP80", razaoSocial: "TDG VESTUARIO E ACESSORIOS LTDA", cnpj: "08.746.409/0001-63" },
+    { codigo: "EMP72", razaoSocial: "MECA COMERCIO E SERVIÇOS DE INFORMATICA EIRELI - ME", cnpj: "06.983.871/0001-59" },
+    { codigo: "EMP71", razaoSocial: "K A CARVALHO SAID ACESSORIA E CONSULTORIA", cnpj: "22.475.775/0001-56" },
+    { codigo: "EMP82", razaoSocial: "W MOSAICO COMERCIO E SERVIÇOS DE VIDRO LTDA", cnpj: "31.807.831/0001-01" },
+    { codigo: "EMP42", razaoSocial: "PRADO CREDIT", cnpj: "33.456.953/0001-18" },
+    { codigo: "EMP120", razaoSocial: "ALICE XAVIER ARQUITETURA  (PRÓ-LABORE) - nota", cnpj: "44.746.183/0001-64" },
+    { codigo: "EMP9", razaoSocial: "N ALMEIDA LOCACOES LTDA (PRÓ- LABORE)", cnpj: "39.534.988/0001-04" },
+    { codigo: "EMP12", razaoSocial: "A SAID JUNIOR LTDA - CIDADE NOVA (PRÓ- LABORE)", cnpj: "39.534.988/0001-05" },
+    { codigo: "EMP119", razaoSocial: "BARBARA FONTENELE ARQUITETURA (PRÓ-LABORE) - nota", cnpj: "44.739.626/0001-90" },
+    { codigo: "EMP122", razaoSocial: "F T BRASIL CONSULTAS MEDICAS (PRÓ-LABORE) - nota", cnpj: "45.224.568/0001-24" },
+    { codigo: "EMP161", razaoSocial: "C.R CASTRO", cnpj: "50.574.012/0001-06" },
+    { codigo: "EMP137", razaoSocial: "ELIZANDRA LIMA (PRÓ-LABORE)", cnpj: "46.696.229/0001-03" },
+    { codigo: "EMP179", razaoSocial: "A D MACHADO  - nota", cnpj: "54.510.020/0001-31" },
+    { codigo: "EMP92", razaoSocial: "W. G CAMPOS CONSULTORIA EMPRESARIAL EIRELI (PRÓ-LABORE)", cnpj: "03.765.516/0001-15" },
+    { codigo: "EMP203", razaoSocial: "EXTREMO NORTE LTDA (PRÓ - LABORE)", cnpj: "33.323.345/0001-35" },
+    { codigo: "EMP145", razaoSocial: "M L LOPES LTDA (PRÓ-LABORE)", cnpj: "59.276.062/00001-73" },
+    { codigo: "EMP99", razaoSocial: "C C COSTA COMERCIO DE ARTIGOS OPTICOS LTDA", cnpj: "42.861.657/0001-93" },
+    { codigo: "EMP115", razaoSocial: "3 C COMERCIO DE ARTIGOS OPTICOS", cnpj: "44.178.106/0001-55" },
+    { codigo: "EMP108", razaoSocial: "H.C SERVIÇOS OPTOMETRICOS VISUAIS LTDA", cnpj: "42.977.790/0001-00" },
+    { codigo: "EMP107", razaoSocial: "CLEYTON C COSTA COMERCIO DE ARTIGOS OPTICOS LTDA", cnpj: "42.977.727/0001-73" },
+    { codigo: "EMP95", razaoSocial: "E- PRINT SERVICOS GRAFICOS", cnpj: "36.723.672/0001-72" },
+    { codigo: "EMP53", razaoSocial: "AMMED HEALTH", cnpj: "37.909.428/0001-61" },
+    { codigo: "EMP171", razaoSocial: "P.S DA C. AMORIM LTDA", cnpj: "45.983.143/0001-07" },
+    { codigo: "EMP135", razaoSocial: "RAYMUNDO NOGUEIRA LYRA", cnpj: "08.981.105/0001-80" },
+    { codigo: "EMP101", razaoSocial: "SMART TRATAMENTO DE DADOS DIGITAL LTDA", cnpj: "18.145.562/0001-99" },
+    { codigo: "EMP181", razaoSocial: "BRASIL E BELLO ADVOGADOS ASSOCIADOS", cnpj: "54.243.095/0001-01" },
+    { codigo: "EMP186", razaoSocial: "S.E. DE A. BARROS LTDA - GLADIATOR SERVICE", cnpj: "55.130.213/0001-20" },
+    { codigo: "EMP201", razaoSocial: "BRAVO DELTA", cnpj: "02.599.771/0001-72" },
+    { codigo: "EMP172", razaoSocial: "I L RAMOS ODONTOLOGIA - INGRID LOBO", cnpj: "18.320.310/0001-59" },
+    { codigo: "EMP96", razaoSocial: "WALDENIR VIEIRA SOCIEDADE IND DE ADVOCACIA - SEM MOVIMENTO", cnpj: "25.303.890/0001-31" },
+    { codigo: "EMP77", razaoSocial: "M C CABRAL E CIA LTDA - POSTO CABRAL", cnpj: "00.572.804/0001-65" },
+    { codigo: "EMP206", razaoSocial: "EMK COMERCIAL LTDA", cnpj: "00.878.013/0001-68" },
+    { codigo: "EMP207", razaoSocial: "DJK COMERCIO DE ARTIGOS DE FESTAS LTDA", cnpj: "50.769.121/0001-70" },
+    { codigo: "EMP214", razaoSocial: "COMERCIAL MIX - PROMOCAO DE VENDAS LTDA", cnpj: "01.064.966/0001-55" },
+    { codigo: "EMP215", razaoSocial: "B C SOBRINHO", cnpj: "13.628.486/0001-59" },
+    { codigo: "EMP209", razaoSocial: "PRATICAGEM DE MANAUS S/S LTDA", cnpj: "35.800.122/0001-47" },
+    { codigo: "EMPD1000", razaoSocial: "JOAO MOACIR PEREIRA DA SILVA FILHO", cnpj: "—" },
+    { codigo: "EMPD1001", razaoSocial: "GRACE ANNE CORDEIRO CARVALHO", cnpj: "342.621.562-49" },
+    { codigo: "EMPD1002", razaoSocial: "RAPHAELA PRADO", cnpj: "920.568.812-68" },
+    { codigo: "EMPD1003", razaoSocial: "FLAVIA DALCIN MACHADO", cnpj: "674.978.530-15" },
+    { codigo: "EMPD1004", razaoSocial: "KEYTI ANNE CARVALHO SAID", cnpj: "644.800.462-91" },
+    { codigo: "EMPD1005", razaoSocial: "JESSICA DE SOUZA SAID", cnpj: "829.314.292.87" },
+    { codigo: "EMPD1006", razaoSocial: "THIAGO T ROCHA", cnpj: "890.981.372-53" }
   ];
 
   const obrigacoesConfig = [
@@ -994,21 +1122,53 @@
     });
   });
 
+  // ---------- BUSCA ----------
+  function normalizarTexto(str){
+    return (str || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function empresaCombinaComBusca(emp, textoBusca){
+    if (!textoBusca) return true;
+    const alvo = normalizarTexto(textoBusca);
+    return normalizarTexto(emp.codigo).includes(alvo)
+      || normalizarTexto(emp.razaoSocial).includes(alvo)
+      || normalizarTexto(emp.cnpj).includes(alvo);
+  }
+
   // ---------- RENDER EMPRESAS ----------
   const empresasGrid = document.getElementById("empresasGrid");
-  empresas.forEach(emp => {
-    const div = document.createElement("div");
-    div.className = "empresa-card";
-    div.innerHTML = `
-      <span class="empresa-codigo">${emp.codigo}</span>
-      <div class="empresa-nome">${emp.razaoSocial}</div>
-      <div class="empresa-cnpj">CNPJ: ${emp.cnpj}</div>
-    `;
-    empresasGrid.appendChild(div);
-  });
+  const empresasVazio = document.getElementById("empresasVazio");
+  const buscaEmpresas = document.getElementById("buscaEmpresas");
+
+  function renderizarEmpresas(){
+    const textoBusca = buscaEmpresas.value.trim();
+    const filtradas = empresas.filter(emp => empresaCombinaComBusca(emp, textoBusca));
+
+    empresasGrid.innerHTML = "";
+    if (filtradas.length === 0){
+      empresasVazio.style.display = "block";
+    } else {
+      empresasVazio.style.display = "none";
+      filtradas.forEach(emp => {
+        const div = document.createElement("div");
+        div.className = "empresa-card";
+        div.innerHTML = `
+          <span class="empresa-codigo">${emp.codigo}</span>
+          <div class="empresa-nome">${emp.razaoSocial}</div>
+          <div class="empresa-cnpj">CNPJ: ${emp.cnpj}</div>
+        `;
+        empresasGrid.appendChild(div);
+      });
+    }
+  }
+
+  buscaEmpresas.addEventListener("input", renderizarEmpresas);
+  renderizarEmpresas();
 
   // ---------- RENDER TABELA DE OBRIGAÇÕES ----------
   const tbody = document.getElementById("tabelaObrigacoesBody");
+  const obrigacoesVazio = document.getElementById("obrigacoesVazio");
+  const buscaObrigacoes = document.getElementById("buscaObrigacoes");
 
   function calcularProgresso(codigo){
     const estado = obterEstadoMes()[codigo];
@@ -1045,7 +1205,16 @@
     const estadoMes = obterEstadoMes();
     tbody.innerHTML = "";
 
-    empresas.forEach(emp => {
+    const textoBusca = buscaObrigacoes.value.trim();
+    const empresasFiltradas = empresas.filter(emp => empresaCombinaComBusca(emp, textoBusca));
+
+    if (empresasFiltradas.length === 0){
+      obrigacoesVazio.style.display = "block";
+      return;
+    }
+    obrigacoesVazio.style.display = "none";
+
+    empresasFiltradas.forEach(emp => {
       const tr = document.createElement("tr");
 
       let checksHtml = "";
@@ -1080,7 +1249,7 @@
       tbody.appendChild(tr);
     });
 
-    empresas.forEach(emp => atualizarProgresso(emp.codigo));
+    empresasFiltradas.forEach(emp => atualizarProgresso(emp.codigo));
   }
 
   // ---------- PAINEL ----------
@@ -1154,6 +1323,7 @@
 
   document.getElementById("mesAnterior").addEventListener("click", () => mudarMes(-1));
   document.getElementById("mesProximo").addEventListener("click", () => mudarMes(1));
+  buscaObrigacoes.addEventListener("input", renderizarObrigacoes);
 
   function exportarBackup(){
     const dadosBackup = {
