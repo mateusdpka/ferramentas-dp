@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferramentas · Departamento Pessoal</title>
+<style>
+  :root{
+    --verde-escuro: #16382b;
+    --verde-escuro-2: #1e4a38;
+    --verde-destaque: #2f7a5c;
+    --fundo: #f2f4f3;
+    --card: #ffffff;
+    --texto: #1f2a26;
+    --texto-suave: #6b7770;
+    --borda: #e3e8e6;
+    --sombra: 0 1px 3px rgba(20,30,25,0.08), 0 1px 2px rgba(20,30,25,0.06);
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+  }
+  header.topo{
+    background: linear-gradient(135deg, var(--verde-escuro) 0%, #0f2a20 100%);
+    color: #eaf2ee;
+    padding: 40px 24px;
+    text-align:center;
+  }
+  header.topo h1{ margin:0 0 6px 0; font-size: 24px; }
+  header.topo p{ margin:0; color:#a9c4b8; font-size: 14px; }
+  main{
+    max-width: 880px;
+    margin: -30px auto 0;
+    padding: 0 20px 60px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  a.card{
+    display:block;
+    background: var(--card);
+    border: 1px solid var(--borda);
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+    padding: 26px;
+    text-decoration:none;
+    color: var(--texto);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  a.card:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(20,30,25,0.12);
+  }
+  .card-emoji{ font-size: 26px; margin-bottom: 12px; }
+  .card-titulo{ font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .card-desc{ font-size: 13.5px; color: var(--texto-suave); line-height:1.5; }
+  .card-ir{
+    display:inline-block;
+    margin-top: 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--verde-destaque);
+  }
+  footer{
+    text-align:center;
+    font-size: 12px;
+    color: var(--texto-suave);
+    padding: 20px;
+  }
+</style>
+</head>
+<body>
+  <header class="topo">
+    <h1>Ferramentas do Departamento Pessoal</h1>
+    <p>Escritório contábil · uso interno e para clientes</p>
+  </header>
+  <main>
+    <div class="grid">
+      <a class="card" href="demandas.html">
+        <div class="card-emoji">🗂️</div>
+        <div class="card-titulo">Central de Demandas</div>
+        <div class="card-desc">Controle de obrigações mensais por empresa, solicitações dos clientes e painel de acompanhamento.</div>
+        <span class="card-ir">Abrir ferramenta →</span>
+      </a>
+      <a class="card" href="simulador-ferias.html">
+        <div class="card-emoji">🧮</div>
+        <div class="card-titulo">Simulador de Férias</div>
+        <div class="card-desc">Cálculo de férias com INSS, IRRF, abono pecuniário, período aquisitivo e de gozo.</div>
+        <span class="card-ir">Abrir ferramenta →</span>
+      </a>
+    </div>
+  </main>
+  <footer>Ferramentas internas — dados fictícios e simulações, sem substituir o cálculo oficial da folha.</footer>
+</body>
+</html>

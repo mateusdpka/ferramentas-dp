@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Demandas · Departamento Pessoal</title>
+<style>
+  :root{
+    --verde-escuro: #16382b;
+    --verde-escuro-2: #1e4a38;
+    --verde-destaque: #2f7a5c;
+    --fundo: #f2f4f3;
+    --card: #ffffff;
+    --texto: #1f2a26;
+    --texto-suave: #6b7770;
+    --borda: #e3e8e6;
+    --ok: #2f7a5c;
+    --pendente: #d97b3f;
+    --sombra: 0 1px 3px rgba(20,30,25,0.08), 0 1px 2px rgba(20,30,25,0.06);
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+  }
+
+  .app{
+    display:flex;
+    min-height: 100vh;
+  }
+
+  /* SIDEBAR */
+  .sidebar{
+    width: 240px;
+    flex-shrink:0;
+    background: linear-gradient(180deg, var(--verde-escuro) 0%, #0f2a20 100%);
+    color: #eaf2ee;
+    display:flex;
+    flex-direction:column;
+    padding: 24px 0;
+  }
+
+  .brand{
+    padding: 0 24px 24px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 12px;
+  }
+
+  .brand-title{
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .brand-sub{
+    font-size: 12px;
+    color: #a9c4b8;
+    margin-top: 2px;
+  }
+
+  nav.menu{
+    display:flex;
+    flex-direction:column;
+    gap: 2px;
+    padding: 8px 12px;
+  }
+
+  .menu-item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding: 11px 14px;
+    border-radius: 8px;
+    color: #cfe2d9;
+    font-size: 14px;
+    cursor:pointer;
+    border: none;
+    background: transparent;
+    text-align:left;
+    width:100%;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .menu-item:hover{
+    background: rgba(255,255,255,0.06);
+    color: #ffffff;
+  }
+
+  .menu-item.active{
+    background: var(--verde-destaque);
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  .menu-icon{
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.7;
+    flex-shrink:0;
+  }
+
+  /* MAIN */
+  .main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+  }
+
+  header.topbar{
+    background: var(--card);
+    border-bottom: 1px solid var(--borda);
+    padding: 18px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .topbar-title{
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--texto);
+  }
+
+  .topbar-month{
+    font-size: 13px;
+    color: var(--texto-suave);
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  .topbar-right{
+    display:flex;
+    align-items:center;
+    gap: 16px;
+  }
+
+  .mes-seletor{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+
+  .mes-nav-btn{
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 1px solid var(--borda);
+    background: #fff;
+    color: var(--texto-suave);
+    font-size: 15px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition: all 0.15s ease;
+  }
+
+  .mes-nav-btn:hover{
+    border-color: var(--verde-destaque);
+    color: var(--verde-destaque);
+  }
+
+  .content{
+    padding: 28px 32px;
+    flex:1;
+  }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .card{
+    background: var(--card);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    box-shadow: var(--sombra);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .card-title{
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    color: var(--texto);
+  }
+
+  .empty-state{
+    color: var(--texto-suave);
+    font-size: 14px;
+    padding: 40px 0;
+    text-align:center;
+  }
+
+  /* EMPRESAS grid */
+  .empresas-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .empresa-card{
+    border: 1px solid var(--borda);
+    border-radius: 10px;
+    padding: 16px;
+    background: #fbfdfc;
+  }
+
+  .empresa-codigo{
+    display:inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--verde-destaque);
+    background: rgba(47,122,92,0.1);
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+
+  .empresa-nome{
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto);
+    margin-bottom: 4px;
+  }
+
+  .empresa-cnpj{
+    font-size: 12.5px;
+    color: var(--texto-suave);
+  }
+
+  /* TABLE */
+  .table-wrap{
+    overflow-x:auto;
+  }
+
+  table.obrigacoes{
+    width:100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 780px;
+  }
+
+  table.obrigacoes th{
+    text-align:left;
+    color: var(--texto-suave);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--borda);
+    white-space: nowrap;
+  }
+
+  table.obrigacoes td{
+    padding: 12px;
+    border-bottom: 1px solid var(--borda);
+    vertical-align: middle;
+  }
+
+  table.obrigacoes tr:last-child td{
+    border-bottom: none;
+  }
+
+  .empresa-cell .nome{
+    font-weight: 600;
+    color: var(--texto);
+  }
+  .empresa-cell .cod{
+    font-size: 11.5px;
+    color: var(--texto-suave);
+  }
+
+  th.col-obrigacao{
+    text-align:center;
+  }
+  td.check-cell{
+    text-align:center;
+  }
+
+  .check-btn{
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1.5px solid var(--borda);
+    background: #fff;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 15px;
+    color: transparent;
+    transition: all 0.15s ease;
+  }
+
+  .check-btn:hover{
+    border-color: var(--verde-destaque);
+  }
+
+  .check-btn.done{
+    background: var(--ok);
+    border-color: var(--ok);
+    color: #fff;
+  }
+
+  .check-btn.pending::after{
+    content: "";
+  }
+
+  .obrigacao-prazo{
+    font-weight: 400;
+    font-size: 10.5px;
+    color: var(--texto-suave);
+    text-transform: none;
+    letter-spacing: normal;
+    display:block;
+    margin-top:2px;
+  }
+
+  .check-cell-inner{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+  }
+
+  .check-data{
+    font-size: 10.5px;
+    color: var(--texto-suave);
+  }
+
+  .check-status{
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .status-vermelho{
+    color: #b3261e;
+    background: rgba(179,38,30,0.1);
+  }
+  .status-ambar{
+    color: #9a5b12;
+    background: rgba(217,123,63,0.14);
+  }
+  .status-neutro{
+    color: var(--texto-suave);
+    background: var(--fundo);
+  }
+  .status-verde{
+    color: var(--ok);
+    background: rgba(47,122,92,0.12);
+  }
+
+  /* PAINEL */
+  .indicadores-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .indicador-card{
+    background: var(--card);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    box-shadow: var(--sombra);
+    padding: 20px;
+  }
+
+  .indicador-valor{
+    font-size: 30px;
+    font-weight: 800;
+    line-height:1;
+    margin-bottom: 6px;
+  }
+
+  .indicador-label{
+    font-size: 12.5px;
+    color: var(--texto-suave);
+    font-weight: 600;
+  }
+
+  .indicador-verde .indicador-valor{ color: var(--ok); }
+  .indicador-vermelho .indicador-valor{ color: #b3261e; }
+  .indicador-ambar .indicador-valor{ color: #9a5b12; }
+  .indicador-neutro .indicador-valor{ color: var(--texto); }
+
+  .vencimentos-lista{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+
+  .vencimento-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 12px 14px;
+    border: 1px solid var(--borda);
+    border-radius: 10px;
+    background: #fbfdfc;
+  }
+
+  .vencimento-info .vencimento-nome{
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto);
+  }
+
+  .vencimento-info .vencimento-detalhe{
+    font-size: 12px;
+    color: var(--texto-suave);
+    margin-top: 2px;
+  }
+
+  /* MENU BADGE */
+  .menu-badge{
+    margin-left: auto;
+    background: #d97b3f;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 999px;
+    line-height: 1.5;
+  }
+
+  /* SOLICITAÇÕES */
+  .solicitacoes-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .btn-primario{
+    background: var(--verde-destaque);
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor:pointer;
+    transition: background 0.15s ease;
+  }
+  .btn-primario:hover{ background: var(--verde-escuro-2); }
+
+  .btn-secundario{
+    background: #fff;
+    color: var(--texto);
+    border: 1px solid var(--borda);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor:pointer;
+  }
+  .btn-secundario:hover{ background: var(--fundo); }
+
+  .filtros-status{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .filtro-btn{
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    color: var(--texto-suave);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor:pointer;
+    transition: all 0.15s ease;
+  }
+
+  .filtro-btn:hover{ border-color: var(--verde-destaque); }
+
+  .filtro-btn.active{
+    background: var(--verde-escuro);
+    color: #fff;
+    border-color: var(--verde-escuro);
+  }
+
+  table.solicitacoes-table{
+    width:100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 720px;
+  }
+
+  table.solicitacoes-table th{
+    text-align:left;
+    color: var(--texto-suave);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--borda);
+    white-space: nowrap;
+  }
+
+  table.solicitacoes-table td{
+    padding: 12px;
+    border-bottom: 1px solid var(--borda);
+    vertical-align: middle;
+  }
+
+  table.solicitacoes-table tr:last-child td{ border-bottom: none; }
+
+  .sol-titulo{ font-weight: 600; color: var(--texto); }
+  .sol-descricao{ font-size: 12px; color: var(--texto-suave); margin-top: 2px; max-width: 260px; }
+
+  .tag-prioridade{
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .prioridade-baixa{ color: #3a6b8a; background: rgba(58,107,138,0.12); }
+  .prioridade-media{ color: #9a5b12; background: rgba(217,123,63,0.14); }
+  .prioridade-alta{ color: #b3261e; background: rgba(179,38,30,0.1); }
+
+  .tag-status{
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .status-tag-aberto{ color: #9a5b12; background: rgba(217,123,63,0.14); }
+  .status-tag-andamento{ color: #3a6b8a; background: rgba(58,107,138,0.12); }
+  .status-tag-concluida{ color: var(--ok); background: rgba(47,122,92,0.12); }
+
+  .acoes-cell{
+    display:flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .acao-btn{
+    border: 1px solid var(--borda);
+    background: #fff;
+    color: var(--texto-suave);
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor:pointer;
+    transition: all 0.15s ease;
+  }
+  .acao-btn:hover{ border-color: var(--verde-destaque); color: var(--verde-destaque); }
+  .acao-btn.excluir:hover{ border-color: #b3261e; color: #b3261e; }
+
+  /* MODAL */
+  .modal-overlay{
+    display:none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,30,24,0.45);
+    align-items:center;
+    justify-content:center;
+    z-index: 100;
+    padding: 20px;
+  }
+
+  .modal-overlay.active{ display:flex; }
+
+  .modal-box{
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y:auto;
+    padding: 24px;
+    box-shadow: 0 12px 32px rgba(15,30,24,0.25);
+  }
+
+  .modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom: 16px;
+  }
+
+  .modal-header h3{ margin:0; font-size: 17px; color: var(--texto); }
+
+  .modal-fechar{
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height:1;
+    cursor:pointer;
+    color: var(--texto-suave);
+  }
+
+  .form-group{ margin-bottom: 14px; }
+  .form-row{ display:flex; gap: 12px; }
+  .form-row .form-group{ flex:1; }
+
+  .form-group label{
+    display:block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--texto);
+    margin-bottom: 6px;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea{
+    width:100%;
+    padding: 9px 12px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--texto);
+    background: #fff;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus{
+    outline: 2px solid var(--verde-destaque);
+    outline-offset: 1px;
+  }
+
+  .modal-acoes{
+    display:flex;
+    justify-content:flex-end;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .progress-cell{
+    min-width: 140px;
+  }
+
+  .progress-track{
+    width: 100%;
+    height: 8px;
+    background: var(--borda);
+    border-radius: 999px;
+    overflow:hidden;
+    margin-bottom: 4px;
+  }
+
+  .progress-fill{
+    height: 100%;
+    background: var(--verde-destaque);
+    border-radius: 999px;
+    transition: width 0.25s ease;
+  }
+
+  .progress-label{
+    font-size: 11.5px;
+    color: var(--texto-suave);
+    font-weight: 600;
+  }
+
+  @media (max-width: 860px){
+    .app{ flex-direction: column; }
+    .sidebar{
+      width: 100%;
+      flex-direction: row;
+      align-items:center;
+      padding: 12px 16px;
+      overflow-x:auto;
+    }
+    .brand{ display:none; }
+    nav.menu{ flex-direction: row; padding: 0; }
+    .menu-item{ white-space: nowrap; }
+    header.topbar{ padding: 16px 18px; }
+    .content{ padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-title">Central de Demandas</div>
+      <div class="brand-sub">Departamento Pessoal</div>
+    </div>
+    <nav class="menu">
+      <button class="menu-item active" data-view="painel"><span class="menu-icon"></span>Painel</button>
+      <button class="menu-item" data-view="obrigacoes"><span class="menu-icon"></span>Obrigações Mensais</button>
+      <button class="menu-item" data-view="solicitacoes"><span class="menu-icon"></span>Solicitações<span class="menu-badge" id="badgeSolicitacoes" style="display:none;">0</span></button>
+      <button class="menu-item" data-view="empresas"><span class="menu-icon"></span>Empresas</button>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-title" id="tituloView">Painel</div>
+      <div class="topbar-right">
+        <div class="mes-seletor">
+          <button class="mes-nav-btn" id="mesAnterior" aria-label="Mês anterior" title="Mês anterior">‹</button>
+          <div class="topbar-month" id="mesAtual"></div>
+          <button class="mes-nav-btn" id="mesProximo" aria-label="Próximo mês" title="Próximo mês">›</button>
+        </div>
+        <button class="btn-secundario" id="btnExportarBackup">Exportar backup</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- PAINEL -->
+      <section class="view active" id="view-painel">
+        <div class="indicadores-grid" id="indicadoresGrid">
+          <!-- gerado via JS -->
+        </div>
+        <div class="card">
+          <h3 class="card-title">Próximos vencimentos</h3>
+          <div class="vencimentos-lista" id="vencimentosLista">
+            <!-- gerado via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- OBRIGAÇÕES MENSAIS -->
+      <section class="view" id="view-obrigacoes">
+        <div class="card">
+          <h3 class="card-title">Obrigações do mês — por empresa</h3>
+          <div class="table-wrap">
+            <table class="obrigacoes">
+              <thead>
+                <tr>
+                  <th>Empresa</th>
+                  <th class="col-obrigacao">Envio da Folha<span class="obrigacao-prazo">até dia 05</span></th>
+                  <th class="col-obrigacao">e-Social<span class="obrigacao-prazo">até dia 13</span></th>
+                  <th class="col-obrigacao">Guia FGTS<span class="obrigacao-prazo">até dia 20</span></th>
+                  <th class="col-obrigacao">Guia DCTFWeb<span class="obrigacao-prazo">até dia 20</span></th>
+                  <th>Progresso</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaObrigacoesBody">
+                <!-- gerado via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SOLICITAÇÕES -->
+      <section class="view" id="view-solicitacoes">
+        <div class="card">
+          <div class="solicitacoes-header">
+            <h3 class="card-title" style="margin:0;">Solicitações dos clientes</h3>
+            <button class="btn-primario" id="btnNovaSolicitacao">+ Nova solicitação</button>
+          </div>
+
+          <div class="filtros-status" id="filtrosStatus">
+            <button class="filtro-btn active" data-filtro="todas">Todas</button>
+            <button class="filtro-btn" data-filtro="aberto">Em aberto</button>
+            <button class="filtro-btn" data-filtro="andamento">Em andamento</button>
+            <button class="filtro-btn" data-filtro="concluida">Concluídas</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="solicitacoes-table">
+              <thead>
+                <tr>
+                  <th>Título</th>
+                  <th>Empresa</th>
+                  <th>Prazo</th>
+                  <th>Prioridade</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabelaSolicitacoesBody"></tbody>
+            </table>
+            <div class="empty-state" id="solicitacoesVazio" style="display:none;">Nenhuma solicitação nesse filtro.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODAL NOVA SOLICITAÇÃO -->
+      <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+          <div class="modal-header">
+            <h3>Nova solicitação</h3>
+            <button class="modal-fechar" id="modalFechar">&times;</button>
+          </div>
+          <form id="formSolicitacao">
+            <div class="form-group">
+              <label for="campoTitulo">Título da demanda</label>
+              <input type="text" id="campoTitulo" required placeholder="Ex: Rescisão de colaborador">
+            </div>
+            <div class="form-group">
+              <label for="campoEmpresa">Empresa</label>
+              <select id="campoEmpresa" required></select>
+            </div>
+            <div class="form-group">
+              <label for="campoDescricao">Descrição (opcional)</label>
+              <textarea id="campoDescricao" rows="3" placeholder="Detalhes adicionais..."></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="campoPrazo">Prazo de entrega</label>
+                <input type="date" id="campoPrazo" required>
+              </div>
+              <div class="form-group">
+                <label for="campoPrioridade">Prioridade</label>
+                <select id="campoPrioridade">
+                  <option value="baixa">Baixa</option>
+                  <option value="media" selected>Média</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="campoStatus">Status</label>
+              <select id="campoStatus">
+                <option value="aberto" selected>Em aberto</option>
+                <option value="andamento">Em andamento</option>
+                <option value="concluida">Concluída</option>
+              </select>
+            </div>
+            <div class="modal-acoes">
+              <button type="button" class="btn-secundario" id="btnCancelarForm">Cancelar</button>
+              <button type="submit" class="btn-primario">Salvar solicitação</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- EMPRESAS -->
+      <section class="view" id="view-empresas">
+        <div class="card">
+          <h3 class="card-title">Carteira de empresas</h3>
+          <div class="empresas-grid" id="empresasGrid">
+            <!-- gerado via JS -->
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- DADOS FICTÍCIOS ----------
+  const empresas = [
+    { codigo: "EMP001", razaoSocial: "Alvorada Comércio de Alimentos Ltda", cnpj: "12.345.678/0001-90" },
+    { codigo: "EMP002", razaoSocial: "Bela Vista Materiais de Construção S.A.", cnpj: "23.456.789/0001-01" },
+    { codigo: "EMP003", razaoSocial: "Cedro Transportes e Logística Ltda", cnpj: "34.567.890/0001-12" },
+    { codigo: "EMP004", razaoSocial: "Diamante Confecções Ltda", cnpj: "45.678.901/0001-23" },
+    { codigo: "EMP005", razaoSocial: "Ébano Serviços de Limpeza Ltda", cnpj: "56.789.012/0001-34" },
+    { codigo: "EMP006", razaoSocial: "Flor do Norte Distribuidora Ltda", cnpj: "67.890.123/0001-45" },
+    { codigo: "EMP007", razaoSocial: "Girassol Papelaria e Escritório Ltda", cnpj: "78.901.234/0001-56" },
+    { codigo: "EMP008", razaoSocial: "Horizonte Tecnologia da Informação Ltda", cnpj: "89.012.345/0001-67" },
+    { codigo: "EMP009", razaoSocial: "Ipê Roxo Restaurante Ltda", cnpj: "90.123.456/0001-78" },
+    { codigo: "EMP010", razaoSocial: "Jamburana Metalúrgica Ltda", cnpj: "01.234.567/0001-89" }
+  ];
+
+  const obrigacoesConfig = [
+    { chave: "folha", label: "Envio da Folha", dia: 5 },
+    { chave: "esocial", label: "e-Social", dia: 13 },
+    { chave: "fgts", label: "Guia FGTS", dia: 20 },
+    { chave: "dctfweb", label: "Guia DCTFWeb", dia: 20 }
+  ];
+
+  // estado das solicitações (declarado no topo para evitar erro de inicialização)
+  let solicitacoes = [];
+  let proximoIdSolicitacao = 1;
+  let filtroAtual = "todas";
+
+  // estado: entregue/pendente por empresa e obrigação — armazenado por mês (ano-mês)
+  const estadoObrigacoesPorMes = {};
+
+  function chaveMes(){
+    return currentViewDate.year + "-" + currentViewDate.month;
+  }
+
+  function obterEstadoMes(){
+    const chave = chaveMes();
+    if (!estadoObrigacoesPorMes[chave]){
+      estadoObrigacoesPorMes[chave] = {};
+      empresas.forEach(emp => {
+        estadoObrigacoesPorMes[chave][emp.codigo] = {
+          folha: false,
+          esocial: false,
+          fgts: false,
+          dctfweb: false
+        };
+      });
+    }
+    return estadoObrigacoesPorMes[chave];
+  }
+
+  // ---------- MÊS ATUAL / NAVEGAÇÃO ----------
+  const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+  const hoje = new Date();
+  const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+  // mês atualmente exibido na tela (independente da data real)
+  const currentViewDate = { year: hoje.getFullYear(), month: hoje.getMonth() };
+
+  function atualizarCabecalhoMes(){
+    document.getElementById("mesAtual").textContent = meses[currentViewDate.month] + " de " + currentViewDate.year;
+  }
+
+  function diaFormatado(dia){
+    return String(dia).padStart(2, "0") + "/" + String(currentViewDate.month + 1).padStart(2, "0");
+  }
+
+  // diferença em dias entre um dia do mês exibido e a data real de hoje
+  function diffDiasParaHoje(dia){
+    const dataVencimento = new Date(currentViewDate.year, currentViewDate.month, dia);
+    return Math.round((dataVencimento - hojeSemHora) / (1000 * 60 * 60 * 24));
+  }
+
+  function calcularStatus(chave, feito){
+    const config = obrigacoesConfig.find(o => o.chave === chave);
+    const diff = diffDiasParaHoje(config.dia);
+
+    if (feito){
+      return { texto: "Concluído", classe: "status-verde" };
+    }
+    if (diff < 0){
+      const atraso = Math.abs(diff);
+      return { texto: `Atrasado há ${atraso} dia${atraso > 1 ? "s" : ""}`, classe: "status-vermelho" };
+    }
+    if (diff === 0){
+      return { texto: "Vence hoje", classe: "status-ambar" };
+    }
+    if (diff <= 2){
+      return { texto: `Faltam ${diff} dia${diff > 1 ? "s" : ""}`, classe: "status-ambar" };
+    }
+    return { texto: `Faltam ${diff} dias`, classe: "status-neutro" };
+  }
+
+  function mudarMes(delta){
+    currentViewDate.month += delta;
+    if (currentViewDate.month < 0){
+      currentViewDate.month = 11;
+      currentViewDate.year--;
+    } else if (currentViewDate.month > 11){
+      currentViewDate.month = 0;
+      currentViewDate.year++;
+    }
+    atualizarCabecalhoMes();
+    renderizarObrigacoes();
+    atualizarPainel();
+  }
+
+  // ---------- NAVEGAÇÃO ----------
+  const menuItems = document.querySelectorAll(".menu-item");
+  const tituloView = document.getElementById("tituloView");
+  const titulos = {
+    painel: "Painel",
+    obrigacoes: "Obrigações Mensais",
+    solicitacoes: "Solicitações",
+    empresas: "Empresas"
+  };
+
+  menuItems.forEach(item => {
+    item.addEventListener("click", () => {
+      menuItems.forEach(i => i.classList.remove("active"));
+      item.classList.add("active");
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      const viewId = "view-" + item.dataset.view;
+      document.getElementById(viewId).classList.add("active");
+      tituloView.textContent = titulos[item.dataset.view];
+    });
+  });
+
+  // ---------- RENDER EMPRESAS ----------
+  const empresasGrid = document.getElementById("empresasGrid");
+  empresas.forEach(emp => {
+    const div = document.createElement("div");
+    div.className = "empresa-card";
+    div.innerHTML = `
+      <span class="empresa-codigo">${emp.codigo}</span>
+      <div class="empresa-nome">${emp.razaoSocial}</div>
+      <div class="empresa-cnpj">CNPJ: ${emp.cnpj}</div>
+    `;
+    empresasGrid.appendChild(div);
+  });
+
+  // ---------- RENDER TABELA DE OBRIGAÇÕES ----------
+  const tbody = document.getElementById("tabelaObrigacoesBody");
+
+  function calcularProgresso(codigo){
+    const estado = obterEstadoMes()[codigo];
+    const total = obrigacoesConfig.length;
+    const feitas = obrigacoesConfig.filter(o => estado[o.chave]).length;
+    return Math.round((feitas / total) * 100);
+  }
+
+  function atualizarProgresso(codigo){
+    const pct = calcularProgresso(codigo);
+    const fill = document.getElementById("progress-fill-" + codigo);
+    const label = document.getElementById("progress-label-" + codigo);
+    fill.style.width = pct + "%";
+    label.textContent = pct + "%";
+  }
+
+  function toggleObrigacao(codigo, chave, btn){
+    const estadoMes = obterEstadoMes();
+    estadoMes[codigo][chave] = !estadoMes[codigo][chave];
+    const feito = estadoMes[codigo][chave];
+    btn.classList.toggle("done", feito);
+    btn.textContent = feito ? "✓" : "";
+
+    const statusEl = document.getElementById(`status-${codigo}-${chave}`);
+    const status = calcularStatus(chave, feito);
+    statusEl.className = "check-status " + status.classe;
+    statusEl.textContent = status.texto;
+
+    atualizarProgresso(codigo);
+    atualizarPainel();
+  }
+
+  function renderizarObrigacoes(){
+    const estadoMes = obterEstadoMes();
+    tbody.innerHTML = "";
+
+    empresas.forEach(emp => {
+      const tr = document.createElement("tr");
+
+      let checksHtml = "";
+      obrigacoesConfig.forEach(o => {
+        const feito = estadoMes[emp.codigo][o.chave];
+        const status = calcularStatus(o.chave, feito);
+        checksHtml += `
+          <td class="check-cell">
+            <div class="check-cell-inner">
+              <button class="check-btn ${feito ? "done" : ""}" onclick="toggleObrigacao('${emp.codigo}','${o.chave}', this)">${feito ? "✓" : ""}</button>
+              <div class="check-data">${diaFormatado(o.dia)}</div>
+              <div class="check-status ${status.classe}" id="status-${emp.codigo}-${o.chave}">${status.texto}</div>
+            </div>
+          </td>
+        `;
+      });
+
+      tr.innerHTML = `
+        <td class="empresa-cell">
+          <div class="nome">${emp.razaoSocial}</div>
+          <div class="cod">${emp.codigo}</div>
+        </td>
+        ${checksHtml}
+        <td class="progress-cell">
+          <div class="progress-track">
+            <div class="progress-fill" id="progress-fill-${emp.codigo}" style="width:0%"></div>
+          </div>
+          <div class="progress-label" id="progress-label-${emp.codigo}">0%</div>
+        </td>
+      `;
+
+      tbody.appendChild(tr);
+    });
+
+    empresas.forEach(emp => atualizarProgresso(emp.codigo));
+  }
+
+  // ---------- PAINEL ----------
+  function atualizarPainel(){
+    const estadoMes = obterEstadoMes();
+    let entregues = 0;
+    let atrasadas = 0;
+    let vencendoEmBreve = 0;
+
+    empresas.forEach(emp => {
+      obrigacoesConfig.forEach(o => {
+        const feito = estadoMes[emp.codigo][o.chave];
+        const diff = diffDiasParaHoje(o.dia);
+        if (feito){
+          entregues++;
+        } else if (diff < 0){
+          atrasadas++;
+        } else if (diff <= 2){
+          vencendoEmBreve++;
+        }
+      });
+    });
+
+    const indicadores = [
+      { valor: entregues, label: "Obrigações entregues", classe: "indicador-verde" },
+      { valor: atrasadas, label: "Obrigações atrasadas", classe: "indicador-vermelho" },
+      { valor: vencendoEmBreve, label: "Vencendo em breve", classe: "indicador-ambar" },
+      { valor: solicitacoes.filter(s => s.status === "aberto").length, label: "Solicitações abertas", classe: "indicador-neutro" }
+    ];
+
+    const grid = document.getElementById("indicadoresGrid");
+    grid.innerHTML = indicadores.map(ind => `
+      <div class="indicador-card ${ind.classe}">
+        <div class="indicador-valor">${ind.valor}</div>
+        <div class="indicador-label">${ind.label}</div>
+      </div>
+    `).join("");
+
+    // próximos vencimentos: uma entrada por obrigação, ordenada por urgência/data
+    const vencimentos = obrigacoesConfig.map(o => {
+      const diff = diffDiasParaHoje(o.dia);
+      const pendentesEmpresas = empresas.filter(emp => !estadoMes[emp.codigo][o.chave]).length;
+      let status, classe;
+      if (diff < 0){
+        status = `Atrasado há ${Math.abs(diff)} dia${Math.abs(diff) > 1 ? "s" : ""}`;
+        classe = "status-vermelho";
+      } else if (diff === 0){
+        status = "Vence hoje";
+        classe = "status-ambar";
+      } else if (diff <= 2){
+        status = `Faltam ${diff} dia${diff > 1 ? "s" : ""}`;
+        classe = "status-ambar";
+      } else {
+        status = `Faltam ${diff} dias`;
+        classe = "status-neutro";
+      }
+      return { ...o, diff, status, classe, pendentesEmpresas };
+    }).sort((a, b) => a.diff - b.diff);
+
+    const lista = document.getElementById("vencimentosLista");
+    lista.innerHTML = vencimentos.map(v => `
+      <div class="vencimento-item">
+        <div class="vencimento-info">
+          <div class="vencimento-nome">${v.label}</div>
+          <div class="vencimento-detalhe">Vencimento dia ${diaFormatado(v.dia)} · ${v.pendentesEmpresas} de ${empresas.length} empresas pendentes</div>
+        </div>
+        <div class="check-status ${v.classe}">${v.status}</div>
+      </div>
+    `).join("");
+  }
+
+  document.getElementById("mesAnterior").addEventListener("click", () => mudarMes(-1));
+  document.getElementById("mesProximo").addEventListener("click", () => mudarMes(1));
+
+  function exportarBackup(){
+    const dadosBackup = {
+      exportadoEm: new Date().toISOString(),
+      mesVisualizado: { ano: currentViewDate.year, mes: currentViewDate.month + 1 },
+      empresas: empresas,
+      obrigacoesPorMes: estadoObrigacoesPorMes,
+      solicitacoes: solicitacoes
+    };
+
+    const conteudo = JSON.stringify(dadosBackup, null, 2);
+    const blob = new Blob([conteudo], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dataArquivo = hoje.toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `backup-central-demandas-${dataArquivo}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("btnExportarBackup").addEventListener("click", exportarBackup);
+
+  atualizarCabecalhoMes();
+  renderizarObrigacoes();
+  atualizarPainel();
+
+  // ---------- SOLICITAÇÕES ----------
+  // popular select de empresas no formulário
+  const campoEmpresa = document.getElementById("campoEmpresa");
+  empresas.forEach(emp => {
+    const opt = document.createElement("option");
+    opt.value = emp.codigo;
+    opt.textContent = `${emp.codigo} — ${emp.razaoSocial}`;
+    campoEmpresa.appendChild(opt);
+  });
+
+  const modalOverlay = document.getElementById("modalOverlay");
+  const formSolicitacao = document.getElementById("formSolicitacao");
+
+  function abrirModal(){
+    formSolicitacao.reset();
+    modalOverlay.classList.add("active");
+    document.getElementById("campoTitulo").focus();
+  }
+
+  function fecharModal(){
+    modalOverlay.classList.remove("active");
+  }
+
+  document.getElementById("btnNovaSolicitacao").addEventListener("click", abrirModal);
+  document.getElementById("modalFechar").addEventListener("click", fecharModal);
+  document.getElementById("btnCancelarForm").addEventListener("click", fecharModal);
+  modalOverlay.addEventListener("click", (e) => {
+    if (e.target === modalOverlay) fecharModal();
+  });
+
+  formSolicitacao.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const nova = {
+      id: proximoIdSolicitacao++,
+      titulo: document.getElementById("campoTitulo").value.trim(),
+      empresaCodigo: campoEmpresa.value,
+      descricao: document.getElementById("campoDescricao").value.trim(),
+      prazo: document.getElementById("campoPrazo").value,
+      prioridade: document.getElementById("campoPrioridade").value,
+      status: document.getElementById("campoStatus").value
+    };
+    solicitacoes.push(nova);
+    fecharModal();
+    renderizarSolicitacoes();
+    atualizarPainel();
+  });
+
+  document.querySelectorAll(".filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroAtual = btn.dataset.filtro;
+      renderizarSolicitacoes();
+    });
+  });
+
+  function calcularStatusPrazo(prazoStr, status){
+    if (status === "concluida"){
+      return { texto: "Concluída", classe: "status-verde" };
+    }
+    const [ano, mes, dia] = prazoStr.split("-").map(Number);
+    const prazoData = new Date(ano, mes - 1, dia);
+    const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const diffMs = prazoData - hojeSemHora;
+    const diff = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diff < 0){
+      const atraso = Math.abs(diff);
+      return { texto: `Atrasado há ${atraso} dia${atraso > 1 ? "s" : ""}`, classe: "status-vermelho" };
+    }
+    if (diff === 0){
+      return { texto: "Vence hoje", classe: "status-ambar" };
+    }
+    if (diff <= 2){
+      return { texto: `Faltam ${diff} dia${diff > 1 ? "s" : ""}`, classe: "status-ambar" };
+    }
+    return { texto: `Faltam ${diff} dias`, classe: "status-neutro" };
+  }
+
+  function formatarDataBR(prazoStr){
+    const [ano, mes, dia] = prazoStr.split("-");
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  const labelsPrioridade = { baixa: "Baixa", media: "Média", alta: "Alta" };
+  const labelsStatus = { aberto: "Em aberto", andamento: "Em andamento", concluida: "Concluída" };
+
+  function renderizarSolicitacoes(){
+    const tbody = document.getElementById("tabelaSolicitacoesBody");
+    const vazio = document.getElementById("solicitacoesVazio");
+
+    const filtradas = solicitacoes.filter(s => filtroAtual === "todas" || s.status === filtroAtual);
+
+    if (filtradas.length === 0){
+      tbody.innerHTML = "";
+      vazio.style.display = "block";
+    } else {
+      vazio.style.display = "none";
+      tbody.innerHTML = filtradas.map(s => {
+        const emp = empresas.find(e => e.codigo === s.empresaCodigo);
+        const statusPrazo = calcularStatusPrazo(s.prazo, s.status);
+        return `
+          <tr>
+            <td>
+              <div class="sol-titulo">${s.titulo}</div>
+              ${s.descricao ? `<div class="sol-descricao">${s.descricao}</div>` : ""}
+            </td>
+            <td>${emp ? emp.razaoSocial : "—"}</td>
+            <td>
+              <div>${formatarDataBR(s.prazo)}</div>
+              <span class="check-status ${statusPrazo.classe}">${statusPrazo.texto}</span>
+            </td>
+            <td><span class="tag-prioridade prioridade-${s.prioridade}">${labelsPrioridade[s.prioridade]}</span></td>
+            <td><span class="tag-status status-tag-${s.status}">${labelsStatus[s.status]}</span></td>
+            <td>
+              <div class="acoes-cell">
+                ${s.status !== "concluida"
+                  ? `<button class="acao-btn" onclick="concluirSolicitacao(${s.id})">Concluir</button>`
+                  : `<button class="acao-btn" onclick="reabrirSolicitacao(${s.id})">Reabrir</button>`}
+                <button class="acao-btn excluir" onclick="excluirSolicitacao(${s.id})">Excluir</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    atualizarContadorSolicitacoes();
+  }
+
+  function concluirSolicitacao(id){
+    const s = solicitacoes.find(s => s.id === id);
+    if (s) s.status = "concluida";
+    renderizarSolicitacoes();
+    atualizarPainel();
+  }
+
+  function reabrirSolicitacao(id){
+    const s = solicitacoes.find(s => s.id === id);
+    if (s) s.status = "aberto";
+    renderizarSolicitacoes();
+    atualizarPainel();
+  }
+
+  function excluirSolicitacao(id){
+    solicitacoes = solicitacoes.filter(s => s.id !== id);
+    renderizarSolicitacoes();
+    atualizarPainel();
+  }
+
+  function atualizarContadorSolicitacoes(){
+    const abertas = solicitacoes.filter(s => s.status === "aberto").length;
+    const badge = document.getElementById("badgeSolicitacoes");
+    if (abertas > 0){
+      badge.style.display = "inline-block";
+      badge.textContent = abertas;
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
+  renderizarSolicitacoes();
+</script>
+
+</body>
+</html>

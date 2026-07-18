@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de Cálculo de Férias · Departamento Pessoal</title>
+<style>
+  :root{
+    --verde-escuro: #16382b;
+    --verde-escuro-2: #1e4a38;
+    --verde-destaque: #2f7a5c;
+    --fundo: #f2f4f3;
+    --card: #ffffff;
+    --texto: #1f2a26;
+    --texto-suave: #6b7770;
+    --borda: #e3e8e6;
+    --ok: #2f7a5c;
+    --alerta: #b3261e;
+    --sombra: 0 1px 3px rgba(20,30,25,0.08), 0 1px 2px rgba(20,30,25,0.06);
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--fundo);
+    color: var(--texto);
+  }
+
+  header.topo{
+    background: linear-gradient(135deg, var(--verde-escuro) 0%, #0f2a20 100%);
+    color: #eaf2ee;
+    padding: 28px 32px;
+  }
+
+  .topo-inner{
+    max-width: 1100px;
+    margin: 0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap: 12px;
+  }
+
+  .topo-titulo{
+    font-size: 21px;
+    font-weight: 700;
+  }
+
+  .topo-sub{
+    font-size: 13px;
+    color: #a9c4b8;
+    margin-top: 2px;
+  }
+
+  .selo{
+    font-size: 11.5px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.1);
+    padding: 6px 12px;
+    border-radius: 999px;
+    color: #d8ebe1;
+  }
+
+  main{
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+    display:grid;
+    grid-template-columns: minmax(320px, 420px) 1fr;
+    gap: 22px;
+    align-items:start;
+  }
+
+  .card{
+    background: var(--card);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    box-shadow: var(--sombra);
+    padding: 24px;
+  }
+
+  .card-title{
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: var(--texto);
+  }
+
+  .card-sub{
+    font-size: 12.5px;
+    color: var(--texto-suave);
+    margin: 0 0 18px 0;
+  }
+
+  .form-group{ margin-bottom: 16px; }
+
+  .form-group label{
+    display:block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--texto);
+    margin-bottom: 6px;
+  }
+
+  .form-hint{
+    font-size: 11.5px;
+    color: var(--texto-suave);
+    margin-top: 5px;
+  }
+
+  .form-hint.alerta{ color: var(--alerta); font-weight: 600; }
+
+  .form-group input[type="text"],
+  .form-group input[type="number"]{
+    width:100%;
+    padding: 10px 12px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--texto);
+    background: #fff;
+  }
+
+  .form-group input:focus{
+    outline: 2px solid var(--verde-destaque);
+    outline-offset: 1px;
+  }
+
+  .form-group input:disabled{
+    background: var(--fundo);
+    color: var(--texto-suave);
+    font-weight: 600;
+  }
+
+  .form-group input[type="date"]{
+    width:100%;
+    padding: 9px 12px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    color: var(--texto);
+    background: #fff;
+  }
+
+  .linha-dupla{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .check-linha{
+    display:flex;
+    align-items:flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    margin-bottom: 14px;
+  }
+
+  .check-linha input[type="checkbox"]{
+    width: 16px;
+    height: 16px;
+    margin-top: 2px;
+    accent-color: var(--verde-destaque);
+    flex-shrink:0;
+  }
+
+  .check-linha .check-texto{ font-size: 13px; }
+  .check-linha .check-texto strong{ display:block; font-size: 13.5px; margin-bottom: 2px; }
+
+  .campo-revelado{
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--borda);
+  }
+
+  .info-direito{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background: rgba(47,122,92,0.08);
+    border: 1px solid rgba(47,122,92,0.25);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+  }
+
+  .info-direito.perdeu{
+    background: rgba(179,38,30,0.08);
+    border-color: rgba(179,38,30,0.3);
+  }
+
+  .info-direito-label{ font-size: 12px; color: var(--texto-suave); font-weight:600; }
+  .info-direito-valor{ font-size: 18px; font-weight: 800; color: var(--ok); }
+  .info-direito.perdeu .info-direito-valor{ color: var(--alerta); font-size: 14px; }
+
+  /* RESULTADO */
+  .resultado-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap:wrap;
+    margin-bottom: 6px;
+  }
+
+  .btn-imprimir{
+    background: #fff;
+    border: 1px solid var(--borda);
+    color: var(--texto);
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor:pointer;
+  }
+  .btn-imprimir:hover{ background: var(--fundo); }
+
+  .total-destaque{
+    background: linear-gradient(135deg, var(--verde-escuro) 0%, var(--verde-escuro-2) 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin: 16px 0 22px 0;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  .total-destaque .label{
+    font-size: 12.5px;
+    color: #bfe0d2;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .total-destaque .valor{
+    font-size: 28px;
+    font-weight: 800;
+  }
+
+  table.memoria{
+    width:100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+
+  table.memoria td{
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--borda);
+  }
+
+  table.memoria tr:last-child td{ border-bottom:none; }
+
+  table.memoria td.valor-col{
+    text-align:right;
+    white-space:nowrap;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  table.memoria tr.linha-desconto td.valor-col{ color: var(--alerta); }
+  table.memoria tr.linha-isenta .desc-col{ color: var(--texto-suave); }
+  table.memoria tr.linha-isenta .valor-col{ color: var(--texto-suave); }
+
+  table.memoria tr.linha-subtotal td{
+    border-top: 2px solid var(--borda);
+    border-bottom: 2px solid var(--borda);
+    font-weight: 700;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .tag-isento{
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--verde-destaque);
+    background: rgba(47,122,92,0.1);
+    padding: 1px 7px;
+    border-radius: 999px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .detalhe-imposto{
+    font-size: 11px;
+    color: var(--texto-suave);
+    margin-top: 2px;
+  }
+
+  .aviso-perdeu{
+    background: rgba(179,38,30,0.07);
+    border: 1px solid rgba(179,38,30,0.25);
+    border-radius: 10px;
+    padding: 18px;
+    color: var(--alerta);
+    font-size: 14px;
+    font-weight: 600;
+    text-align:center;
+  }
+
+  .rodape-legal{
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+    font-size: 11.5px;
+    color: var(--texto-suave);
+    line-height: 1.6;
+  }
+
+  .rodape-legal strong{ color: var(--texto); }
+
+  @media (max-width: 860px){
+    main{ grid-template-columns: 1fr; }
+    header.topo{ padding: 22px 18px; }
+    .linha-dupla{ grid-template-columns: 1fr; }
+  }
+
+  @media print{
+    header.topo, .card.form-card, .btn-imprimir, .rodape-legal{ display:none; }
+    main{ display:block; padding: 0; }
+    body{ background:#fff; }
+    .card.resultado-card{ box-shadow:none; border:none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="topo-inner">
+    <div>
+      <div class="topo-titulo">Simulador de Cálculo de Férias</div>
+      <div class="topo-sub">Departamento Pessoal · estimativa conforme legislação vigente em 2026</div>
+    </div>
+    <div class="selo">Tabelas INSS e IRRF 2026</div>
+  </div>
+</header>
+
+<main>
+  <!-- FORMULÁRIO -->
+  <div class="card form-card">
+    <h3 class="card-title">Dados para simulação</h3>
+    <p class="card-sub">Preencha os campos abaixo — o resultado é calculado automaticamente.</p>
+
+    <div class="form-group">
+      <label for="campoNome">Nome do colaborador (opcional)</label>
+      <input type="text" id="campoNome" placeholder="Ex: João da Silva">
+    </div>
+
+    <div class="linha-dupla">
+      <div class="form-group">
+        <label for="campoInicioAquisitivo">Início do período aquisitivo</label>
+        <input type="date" id="campoInicioAquisitivo">
+      </div>
+      <div class="form-group">
+        <label>Fim do período aquisitivo</label>
+        <input type="text" id="campoFimAquisitivo" disabled placeholder="—">
+      </div>
+    </div>
+
+    <div class="linha-dupla">
+      <div class="form-group">
+        <label for="campoInicioGozo">Início do período de gozo</label>
+        <input type="date" id="campoInicioGozo">
+      </div>
+      <div class="form-group">
+        <label>Fim do período de gozo</label>
+        <input type="text" id="campoFimGozo" disabled placeholder="—">
+      </div>
+    </div>
+
+    <div class="form-hint" id="hintPagamento" style="margin-bottom:14px;"></div>
+
+    <div class="check-linha" id="blocoVencidas" style="display:none; border-color: rgba(179,38,30,0.35); background: rgba(179,38,30,0.06);">
+      <input type="checkbox" id="campoDobroCheck">
+      <div class="check-texto">
+        <strong style="color: var(--alerta);">Férias vencidas — pagar em dobro?</strong>
+        <span id="textoVencidas">O início do gozo é posterior ao fim do período concessivo. Pela Súmula 450 do TST, as férias devem ser pagas em dobro (inclusive o 1/3 constitucional).</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="campoSalario">Salário bruto mensal (R$)</label>
+      <input type="number" id="campoSalario" min="0" step="0.01" value="3000">
+    </div>
+
+    <div class="linha-dupla">
+      <div class="form-group">
+        <label for="campoFaltas">Faltas injustificadas no período aquisitivo</label>
+        <input type="number" id="campoFaltas" min="0" step="1" value="0">
+      </div>
+      <div class="form-group">
+        <label for="campoDependentes">Dependentes (IRRF)</label>
+        <input type="number" id="campoDependentes" min="0" step="1" value="0">
+      </div>
+    </div>
+
+    <div class="info-direito" id="infoDireito">
+      <span class="info-direito-label">Dias de férias a que tem direito</span>
+      <span class="info-direito-valor" id="infoDireitoValor">30 dias</span>
+    </div>
+
+    <div class="form-group">
+      <label for="campoDiasGozar">Dias de férias a gozar</label>
+      <input type="number" id="campoDiasGozar" min="0" step="1" value="30">
+      <div class="form-hint" id="hintDiasGozar"></div>
+    </div>
+
+    <div class="check-linha">
+      <input type="checkbox" id="campoVenderCheck">
+      <div class="check-texto">
+        <strong>Vender parte das férias (abono pecuniário)</strong>
+        Conversão de até 1/3 do período em dinheiro, isenta de INSS e IRRF.
+      </div>
+    </div>
+    <div class="campo-revelado" id="blocoVenda" style="display:none;">
+      <div class="form-group">
+        <label for="campoDiasVendidos">Dias vendidos</label>
+        <input type="number" id="campoDiasVendidos" min="0" step="1" value="0">
+        <div class="form-hint" id="hintDiasVendidos"></div>
+      </div>
+    </div>
+
+    <div class="check-linha">
+      <input type="checkbox" id="campo13Check">
+      <div class="check-texto">
+        <strong>Antecipar a 1ª parcela do 13º salário</strong>
+        Pago junto com as férias, sem desconto de INSS/IRRF neste momento (ajuste ocorre em dezembro).
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="card resultado-card">
+    <div class="resultado-header">
+      <h3 class="card-title" style="margin:0;">Resultado da simulação</h3>
+      <button class="btn-imprimir" id="btnImprimir">Imprimir simulação</button>
+    </div>
+    <p class="card-sub" id="resultadoSub">Valores estimados para o período informado.</p>
+
+    <div id="areaResultado"></div>
+  </div>
+</main>
+
+<div class="rodape-legal">
+  <strong>Sobre esta simulação:</strong> os valores são estimativas baseadas na tabela do INSS 2026 (alíquotas de 7,5% a 14%, teto de contribuição R$ 8.475,55), na tabela tradicional do IRRF (isenção até R$ 2.259,20, alíquotas de 7,5% a 27,5%) e no redutor adicional criado pela Lei nº 15.270/2025, que garante isenção efetiva do IRRF até R$ 5.000,00 mensais e redução gradual até R$ 7.350,00. O abono pecuniário (venda de férias) e seu respectivo 1/3 são isentos de INSS e IRRF. O pagamento das férias deve ocorrer até 2 dias antes do início do período de descanso. Esta ferramenta não substitui o cálculo oficial da folha de pagamento nem a análise de um profissional de contabilidade para casos específicos.
+</div>
+
+<script>
+  // ---------- TABELAS OFICIAIS 2026 ----------
+  const TABELA_INSS = [
+    { limite: 1621.00, aliquota: 0.075, deducao: 0 },
+    { limite: 2902.84, aliquota: 0.09,  deducao: 24.32 },
+    { limite: 4354.27, aliquota: 0.12,  deducao: 111.40 },
+    { limite: 8475.55, aliquota: 0.14,  deducao: 198.49 }
+  ];
+  const TETO_INSS = 8475.55;
+
+  const TABELA_IRRF = [
+    { limite: 2259.20, aliquota: 0,     deducao: 0 },
+    { limite: 2826.65, aliquota: 0.075, deducao: 169.44 },
+    { limite: 3751.05, aliquota: 0.15,  deducao: 381.44 },
+    { limite: 4664.68, aliquota: 0.225, deducao: 662.77 },
+    { limite: Infinity, aliquota: 0.275, deducao: 896.00 }
+  ];
+
+  const DEDUCAO_DEPENDENTE = 189.59;
+
+  // Redutor adicional — Lei nº 15.270/2025, vigente a partir de jan/2026
+  const REDUTOR_BASE = 978.62;
+  const REDUTOR_COEFICIENTE = 0.133145;
+  const REDUTOR_LIMITE_RENDIMENTO = 7350.00;
+
+  function round2(v){
+    return Math.round((v + Number.EPSILON) * 100) / 100;
+  }
+
+  function moeda(v){
+    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
+  // ---------- DATAS ----------
+  function parseDataInput(valor){
+    if (!valor) return null;
+    const [ano, mes, dia] = valor.split("-").map(Number);
+    return new Date(ano, mes - 1, dia);
+  }
+
+  function formatarData(data){
+    if (!data) return "—";
+    const dia = String(data.getDate()).padStart(2, "0");
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    return `${dia}/${mes}/${data.getFullYear()}`;
+  }
+
+  function somarDias(data, dias){
+    const nova = new Date(data);
+    nova.setDate(nova.getDate() + dias);
+    return nova;
+  }
+
+  function somarAnos(data, anos){
+    const nova = new Date(data);
+    nova.setFullYear(nova.getFullYear() + anos);
+    return nova;
+  }
+
+  function calcularINSS(baseOriginal){
+    if (baseOriginal <= 0) return { valor: 0, faixa: null };
+    const base = Math.min(baseOriginal, TETO_INSS);
+    const faixa = TABELA_INSS.find(f => base <= f.limite) || TABELA_INSS[TABELA_INSS.length - 1];
+    const valor = round2(base * faixa.aliquota - faixa.deducao);
+    return { valor: Math.max(0, valor), faixa };
+  }
+
+  function calcularIRRFTabela(base){
+    if (base <= 0) return { valor: 0, faixa: TABELA_IRRF[0] };
+    const faixa = TABELA_IRRF.find(f => base <= f.limite);
+    const valor = round2(base * faixa.aliquota - faixa.deducao);
+    return { valor: Math.max(0, valor), faixa };
+  }
+
+  function calcularRedutor(rendimentoTributavel){
+    if (rendimentoTributavel > REDUTOR_LIMITE_RENDIMENTO) return 0;
+    const redutor = REDUTOR_BASE - (REDUTOR_COEFICIENTE * rendimentoTributavel);
+    return round2(Math.max(0, redutor));
+  }
+
+  function diasDeDireito(faltas){
+    if (faltas <= 5) return 30;
+    if (faltas <= 14) return 24;
+    if (faltas <= 23) return 18;
+    if (faltas <= 32) return 12;
+    return 0;
+  }
+
+  // ---------- ELEMENTOS ----------
+  const campoNome = document.getElementById("campoNome");
+  const campoInicioAquisitivo = document.getElementById("campoInicioAquisitivo");
+  const campoFimAquisitivo = document.getElementById("campoFimAquisitivo");
+  const campoInicioGozo = document.getElementById("campoInicioGozo");
+  const campoFimGozo = document.getElementById("campoFimGozo");
+  const hintPagamento = document.getElementById("hintPagamento");
+  const blocoVencidas = document.getElementById("blocoVencidas");
+  const textoVencidas = document.getElementById("textoVencidas");
+  const campoDobroCheck = document.getElementById("campoDobroCheck");
+  const campoSalario = document.getElementById("campoSalario");
+  const campoFaltas = document.getElementById("campoFaltas");
+  const campoDependentes = document.getElementById("campoDependentes");
+  const campoDiasGozar = document.getElementById("campoDiasGozar");
+  const campoVenderCheck = document.getElementById("campoVenderCheck");
+  const blocoVenda = document.getElementById("blocoVenda");
+  const campoDiasVendidos = document.getElementById("campoDiasVendidos");
+  const campo13Check = document.getElementById("campo13Check");
+
+  const infoDireito = document.getElementById("infoDireito");
+  const infoDireitoValor = document.getElementById("infoDireitoValor");
+  const hintDiasGozar = document.getElementById("hintDiasGozar");
+  const hintDiasVendidos = document.getElementById("hintDiasVendidos");
+  const areaResultado = document.getElementById("areaResultado");
+
+  campoVenderCheck.addEventListener("change", () => {
+    blocoVenda.style.display = campoVenderCheck.checked ? "block" : "none";
+    if (!campoVenderCheck.checked){
+      campoDiasVendidos.value = 0;
+    }
+    recalcular();
+  });
+
+  [campoSalario, campoFaltas, campoDependentes, campoDiasGozar, campoDiasVendidos]
+    .forEach(el => el.addEventListener("input", recalcular));
+  campo13Check.addEventListener("change", recalcular);
+  [campoInicioAquisitivo, campoInicioGozo].forEach(el => el.addEventListener("change", recalcular));
+  campoDobroCheck.addEventListener("change", recalcular);
+
+  function recalcular(){
+    const salario = Math.max(0, parseFloat(campoSalario.value) || 0);
+    const faltas = Math.max(0, parseInt(campoFaltas.value) || 0);
+    const dependentes = Math.max(0, parseInt(campoDependentes.value) || 0);
+    const direito = diasDeDireito(faltas);
+
+    // ---- indicador de dias de direito ----
+    if (direito === 0){
+      infoDireito.classList.add("perdeu");
+      infoDireitoValor.textContent = "Sem direito (mais de 32 faltas)";
+    } else {
+      infoDireito.classList.remove("perdeu");
+      infoDireitoValor.textContent = direito + " dias";
+    }
+
+    if (direito === 0){
+      areaResultado.innerHTML = `
+        <div class="aviso-perdeu">
+          Com mais de 32 faltas injustificadas no período aquisitivo, o colaborador perde o direito a férias
+          neste período (Art. 130, CLT). Nenhum valor é simulado.
+        </div>
+      `;
+      hintDiasGozar.textContent = "";
+      hintDiasVendidos.textContent = "";
+      return;
+    }
+
+    const maxVendaveis = Math.floor(direito / 3);
+
+    // ---- dias vendidos (abono) ----
+    let diasVendidos = 0;
+    if (campoVenderCheck.checked){
+      diasVendidos = Math.max(0, parseInt(campoDiasVendidos.value) || 0);
+      if (diasVendidos > maxVendaveis) diasVendidos = maxVendaveis;
+      campoDiasVendidos.value = diasVendidos;
+      hintDiasVendidos.textContent = `Máximo permitido: ${maxVendaveis} dias (1/3 dos ${direito} dias de direito).`;
+    } else {
+      hintDiasVendidos.textContent = "";
+    }
+
+    // ---- dias a gozar ----
+    let diasGozar = Math.max(0, parseInt(campoDiasGozar.value) || 0);
+    const maxGozar = direito - diasVendidos;
+    if (diasGozar > maxGozar) diasGozar = maxGozar;
+    campoDiasGozar.value = diasGozar;
+
+    const restantes = direito - diasVendidos - diasGozar;
+    if (restantes > 0){
+      hintDiasGozar.textContent = `Restam ${restantes} dia${restantes > 1 ? "s" : ""} de direito não utilizados neste período (poderão ser gozados em outro período de fracionamento).`;
+    } else if (diasGozar > 0 && diasGozar < 5 && diasGozar < direito){
+      hintDiasGozar.textContent = "Atenção: cada período de férias fracionado deve ter, em regra, no mínimo 5 dias corridos.";
+    } else {
+      hintDiasGozar.textContent = "";
+    }
+
+    // ---- período aquisitivo e período de gozo ----
+    const inicioAquisitivo = parseDataInput(campoInicioAquisitivo.value);
+    const inicioGozo = parseDataInput(campoInicioGozo.value);
+
+    let fimAquisitivo = null;
+    let limiteConcessivo = null;
+    if (inicioAquisitivo){
+      fimAquisitivo = somarDias(somarAnos(inicioAquisitivo, 1), -1);
+      limiteConcessivo = somarAnos(fimAquisitivo, 1);
+      campoFimAquisitivo.value = formatarData(fimAquisitivo);
+    } else {
+      campoFimAquisitivo.value = "";
+    }
+
+    let fimGozo = null;
+    if (inicioGozo && diasGozar > 0){
+      fimGozo = somarDias(inicioGozo, diasGozar - 1);
+      campoFimGozo.value = formatarData(fimGozo);
+    } else {
+      campoFimGozo.value = "";
+    }
+
+    if (inicioGozo){
+      const dataLimitePagamento = somarDias(inicioGozo, -2);
+      hintPagamento.textContent = `Pagamento das férias deve ocorrer até ${formatarData(dataLimitePagamento)} (2 dias antes do início do gozo).`;
+    } else {
+      hintPagamento.textContent = "";
+    }
+
+    // ---- férias vencidas (período concessivo expirado) ----
+    let vencidas = false;
+    if (inicioGozo && limiteConcessivo){
+      vencidas = inicioGozo > limiteConcessivo;
+    }
+
+    if (vencidas){
+      blocoVencidas.style.display = "flex";
+      textoVencidas.textContent = `O período concessivo terminou em ${formatarData(limiteConcessivo)} e o gozo começou em ${formatarData(inicioGozo)}. Pela Súmula 450 do TST, as férias devem ser pagas em dobro (inclusive o 1/3 constitucional).`;
+      if (campoDobroCheck.dataset.autoSugerido !== "true"){
+        campoDobroCheck.checked = true;
+        campoDobroCheck.dataset.autoSugerido = "true";
+      }
+    } else {
+      blocoVencidas.style.display = "none";
+      campoDobroCheck.checked = false;
+      campoDobroCheck.dataset.autoSugerido = "false";
+    }
+
+    const aplicarDobro = vencidas && campoDobroCheck.checked;
+
+    // ---- valores ----
+    const salarioDia = salario / 30;
+    const multiplicador = aplicarDobro ? 2 : 1;
+    const valorGozadas = round2(diasGozar * salarioDia * multiplicador);
+    const adicionalGozadas = round2(valorGozadas / 3);
+    const valorAbono = round2(diasVendidos * salarioDia * multiplicador);
+    const adicionalAbono = round2(valorAbono / 3);
+
+    const baseTributavel = round2(valorGozadas + adicionalGozadas);
+    const totalIsento = round2(valorAbono + adicionalAbono);
+
+    const inss = calcularINSS(baseTributavel);
+    const baseIRRF = Math.max(0, round2(baseTributavel - inss.valor - (dependentes * DEDUCAO_DEPENDENTE)));
+    const irrfTabela = calcularIRRFTabela(baseIRRF);
+    const redutor = calcularRedutor(baseTributavel);
+    const irrfFinal = round2(Math.max(0, irrfTabela.valor - redutor));
+
+    const anteciparTerco = campo13Check.checked;
+    const valorAdiantamento13 = anteciparTerco ? round2(salario / 2) : 0;
+
+    const totalBrutoGeral = round2(baseTributavel + totalIsento + valorAdiantamento13);
+    const totalDescontos = round2(inss.valor + irrfFinal);
+    const totalLiquido = round2(totalBrutoGeral - totalDescontos);
+
+    // ---- render ----
+    const nome = campoNome.value.trim();
+    const sufixoDobro = aplicarDobro ? " <span class=\"tag-isento\" style=\"color:var(--alerta); background:rgba(179,38,30,0.1);\">Em dobro</span>" : "";
+
+    let resumoPeriodo = "";
+    if (inicioAquisitivo || inicioGozo){
+      resumoPeriodo = `
+        <div class="form-hint" style="margin-bottom:16px;">
+          ${inicioAquisitivo ? `Período aquisitivo: <strong>${formatarData(inicioAquisitivo)} a ${formatarData(fimAquisitivo)}</strong>. ` : ""}
+          ${inicioGozo ? `Período de gozo: <strong>${formatarData(inicioGozo)}${fimGozo ? " a " + formatarData(fimGozo) : ""}</strong>.` : ""}
+        </div>
+      `;
+    }
+
+    let linhas = "";
+    linhas += linhaMemoria(`Férias gozadas (${diasGozar} dias)${sufixoDobro}`, moeda(valorGozadas));
+    linhas += linhaMemoria(`+ 1/3 constitucional sobre férias gozadas`, moeda(adicionalGozadas));
+
+    if (diasVendidos > 0){
+      linhas += linhaMemoria(`Abono pecuniário — venda de férias (${diasVendidos} dias) <span class="tag-isento">Isento</span>${sufixoDobro}`, moeda(valorAbono), "linha-isenta");
+      linhas += linhaMemoria(`+ 1/3 sobre o abono pecuniário <span class="tag-isento">Isento</span>`, moeda(adicionalAbono), "linha-isenta");
+    }
+
+    if (anteciparTerco){
+      linhas += linhaMemoria(`Adiantamento da 1ª parcela do 13º salário <span class="tag-isento">Sem desconto agora</span>`, moeda(valorAdiantamento13), "linha-isenta");
+    }
+
+    linhas += linhaMemoria(`Total bruto`, moeda(totalBrutoGeral), "linha-subtotal");
+
+    linhas += linhaMemoria(
+      `(–) INSS sobre férias${inss.faixa ? ` <span class="detalhe-inline">(alíquota ${(inss.faixa.aliquota*100).toFixed(1).replace(".", ",")}% sobre a tabela 2026)</span>` : ""}`,
+      "− " + moeda(inss.valor),
+      "linha-desconto"
+    );
+
+    let detalheIrrf = `Base após INSS e dependentes: ${moeda(baseIRRF)}. `;
+    if (redutor > 0){
+      detalheIrrf += `Redução aplicada conforme Lei nº 15.270/2025: ${moeda(redutor)}.`;
+    } else {
+      detalheIrrf += `Rendimento acima de R$ 7.350,00 — sem redução adicional.`;
+    }
+
+    linhas += linhaMemoria(`(–) IRRF sobre férias`, "− " + moeda(irrfFinal), "linha-desconto");
+    linhas += `<tr class="linha-desconto"><td colspan="2" class="detalhe-imposto">${detalheIrrf}</td></tr>`;
+
+    const cabecalho = nome ? `Simulação para <strong>${escapeHtml(nome)}</strong>` : "Valores estimados para o período informado.";
+    document.getElementById("resultadoSub").innerHTML = cabecalho;
+
+    areaResultado.innerHTML = `
+      ${resumoPeriodo}
+      <div class="total-destaque">
+        <span class="label">Valor líquido estimado a receber</span>
+        <span class="valor">${moeda(totalLiquido)}</span>
+      </div>
+      <table class="memoria">
+        ${linhas}
+      </table>
+    `;
+  }
+
+  function linhaMemoria(descricao, valor, classe){
+    return `
+      <tr class="${classe || ""}">
+        <td class="desc-col">${descricao}</td>
+        <td class="valor-col">${valor}</td>
+      </tr>
+    `;
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  document.getElementById("btnImprimir").addEventListener("click", () => window.print());
+
+  recalcular();
+</script>
+
+</body>
+</html>
