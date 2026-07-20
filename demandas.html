@@ -359,6 +359,112 @@
   }
 
   /* EMAILS */
+  .nao-contratado{
+    font-size: 16px;
+    color: var(--borda);
+    font-weight: 700;
+  }
+
+  /* CALENDÁRIO */
+  .calendario-mes{
+    margin-bottom: 24px;
+  }
+
+  .calendario-mes-titulo{
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--texto);
+    margin-bottom: 10px;
+    text-transform: capitalize;
+  }
+
+  .calendario-grade{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+
+  .calendario-dia-nome{
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--texto-suave);
+    text-transform: uppercase;
+    text-align:center;
+    padding-bottom: 4px;
+  }
+
+  .calendario-dia{
+    min-height: 68px;
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    padding: 6px;
+    background: #fbfdfc;
+  }
+
+  .calendario-dia.vazio{
+    background: transparent;
+    border: none;
+  }
+
+  .calendario-dia-numero{
+    font-size: 11px;
+    color: var(--texto-suave);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .calendario-dia.hoje{
+    border-color: var(--marca-dourado);
+    background: rgba(166,122,61,0.06);
+  }
+
+  .calendario-evento{
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 5px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+    background: rgba(166,122,61,0.14);
+    color: var(--marca-dourado);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ATIVIDADE */
+  .atividade-item{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--borda);
+  }
+  .atividade-item:last-child{ border-bottom: none; }
+
+  .atividade-desc{
+    font-size: 13.5px;
+    color: var(--texto);
+  }
+
+  .atividade-meta{
+    font-size: 11.5px;
+    color: var(--texto-suave);
+    margin-top: 2px;
+  }
+
+  .atividade-tag{
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--fundo);
+    color: var(--texto-suave);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
   .emails-toolbar{
     display:flex;
     align-items:center;
@@ -921,6 +1027,29 @@
     outline-offset: 1px;
   }
 
+  .contratos-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .contrato-item{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--texto);
+    padding: 6px 8px;
+    background: var(--fundo);
+    border-radius: 6px;
+    cursor:pointer;
+  }
+
+  .contrato-item input{
+    accent-color: var(--marca-dourado);
+  }
+
   .modal-acoes{
     display:flex;
     justify-content:flex-end;
@@ -1010,6 +1139,8 @@
       <button class="menu-item" data-view="solicitacoes"><span class="menu-icon"></span>Solicitações<span class="menu-badge" id="badgeSolicitacoes" style="display:none;">0</span></button>
       <button class="menu-item" data-view="empresas"><span class="menu-icon"></span>Empresas</button>
       <button class="menu-item" data-view="emails"><span class="menu-icon"></span>E-mails</button>
+      <button class="menu-item" data-view="calendario"><span class="menu-icon"></span>Calendário</button>
+      <button class="menu-item" data-view="atividade"><span class="menu-icon"></span>Atividade</button>
     </nav>
     <div class="sidebar-rodape">
       <div class="sidebar-usuario" id="sidebarUsuarioEmail">—</div>
@@ -1050,7 +1181,10 @@
         <div class="card">
           <div class="secao-header">
             <h3 class="card-title" style="margin:0;">Obrigações do mês — por empresa</h3>
-            <input type="text" class="campo-busca" id="buscaObrigacoes" placeholder="Buscar empresa por nome, código ou CNPJ...">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <input type="text" class="campo-busca" id="buscaObrigacoes" placeholder="Buscar empresa por nome, código ou CNPJ...">
+              <button class="btn-secundario" id="btnExportarRelatorio">Exportar relatório do mês</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table class="obrigacoes">
@@ -1197,6 +1331,17 @@
               <input type="text" id="campoEmpresaCodigoSistema" required placeholder="Ex: 245">
               <div class="form-hint" id="hintCodigoEmpresa"></div>
             </div>
+            <div class="form-group">
+              <label>Obrigações contratadas</label>
+              <div class="contratos-grid">
+                <label class="contrato-item"><input type="checkbox" id="campoContratoFopag" checked> Envio da Folha</label>
+                <label class="contrato-item"><input type="checkbox" id="campoContratoEsocial" checked> e-Social</label>
+                <label class="contrato-item"><input type="checkbox" id="campoContratoFgts" checked> Guia FGTS</label>
+                <label class="contrato-item"><input type="checkbox" id="campoContratoDctfweb" checked> Guia DCTFWeb</label>
+                <label class="contrato-item"><input type="checkbox" id="campoContratoFerias" checked> Controle de Férias</label>
+                <label class="contrato-item"><input type="checkbox" id="campoContratoVtvrponto" checked> VT / VR / Ponto</label>
+              </div>
+            </div>
             <div class="modal-acoes">
               <button type="button" class="btn-secundario" id="btnCancelarFormEmpresa">Cancelar</button>
               <button type="submit" class="btn-primario">Salvar empresa</button>
@@ -1234,6 +1379,27 @@
             <div class="empty-state" id="emailsVazio" style="display:none;">Nenhuma empresa encontrada para essa busca.</div>
           </div>
           <div class="form-hint" style="margin-top:12px;">As edições de e-mail ficam salvas para todos os usuários, em tempo real.</div>
+        </div>
+      </section>
+
+      <!-- CALENDÁRIO -->
+      <section class="view" id="view-calendario">
+        <div class="card">
+          <h3 class="card-title">Vencimentos do mês</h3>
+          <p class="card-sub" style="margin:0 0 16px 0;">Controle de Férias e VT/VR/Ponto vencem dentro do próprio mês de competência. Envio da Folha, e-Social, FGTS e DCTFWeb vencem no mês seguinte.</p>
+          <div id="calendariosContainer"></div>
+        </div>
+      </section>
+
+      <!-- ATIVIDADE -->
+      <section class="view" id="view-atividade">
+        <div class="card">
+          <div class="secao-header">
+            <h3 class="card-title" style="margin:0;">Atividade recente</h3>
+            <input type="text" class="campo-busca" id="buscaAtividade" placeholder="Buscar na atividade...">
+          </div>
+          <div id="listaAtividade"></div>
+          <div class="empty-state" id="atividadeVazio" style="display:none;">Nenhuma atividade encontrada.</div>
         </div>
       </section>
 
@@ -1276,6 +1442,82 @@
 
   function mostrarErroGeral(msg){
     alert(msg);
+  }
+
+  async function registrarAtividade(tipo, descricao){
+    try {
+      await supabaseClient.from("log_atividade").insert({
+        tipo: tipo,
+        descricao: descricao,
+        usuario: usuarioAtual ? usuarioAtual.email : null
+      });
+    } catch (e){
+      console.error("Falha ao registrar atividade:", e);
+    }
+  }
+
+  // ---------- ATIVIDADE ----------
+  let atividades = [];
+
+  function mapAtividadeDb(row){
+    return { id: row.id, tipo: row.tipo, descricao: row.descricao, usuario: row.usuario, criadoEm: row.criado_em };
+  }
+
+  async function carregarAtividade(){
+    const { data, error } = await supabaseClient
+      .from("log_atividade")
+      .select("*")
+      .order("criado_em", { ascending: false })
+      .limit(200);
+    if (error){
+      console.error(error);
+      return;
+    }
+    atividades = (data || []).map(mapAtividadeDb);
+  }
+
+  const labelsTipoAtividade = {
+    obrigacao: "Obrigação",
+    empresa: "Empresa",
+    solicitacao: "Solicitação",
+    email: "E-mail"
+  };
+
+  function formatarDataHoraCompleta(isoString){
+    const d = new Date(isoString);
+    const dia = String(d.getDate()).padStart(2, "0");
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const hora = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${dia}/${mes}/${d.getFullYear()} às ${hora}:${min}`;
+  }
+
+  function renderizarAtividade(){
+    const buscaEl = document.getElementById("buscaAtividade");
+    const texto = normalizarTexto(buscaEl ? buscaEl.value.trim() : "");
+    const filtradas = texto
+      ? atividades.filter(a => normalizarTexto(a.descricao).includes(texto) || normalizarTexto(a.usuario).includes(texto))
+      : atividades;
+
+    const lista = document.getElementById("listaAtividade");
+    const vazio = document.getElementById("atividadeVazio");
+
+    if (filtradas.length === 0){
+      lista.innerHTML = "";
+      vazio.style.display = "block";
+      return;
+    }
+    vazio.style.display = "none";
+
+    lista.innerHTML = filtradas.map(a => `
+      <div class="atividade-item">
+        <div>
+          <div class="atividade-desc">${escapeHtml(a.descricao)}</div>
+          <div class="atividade-meta">${formatarDataHoraCompleta(a.criadoEm)} · ${escapeHtml(nomeCurto(a.usuario) || "sistema")}</div>
+        </div>
+        <span class="atividade-tag">${labelsTipoAtividade[a.tipo] || a.tipo}</span>
+      </div>
+    `).join("");
   }
 
   // ---------- MÊS ATUAL / NAVEGAÇÃO ----------
@@ -1393,6 +1635,76 @@
     return new Date(currentViewDate.year, currentViewDate.month, config.dia);
   }
 
+  // versão parametrizada (para o calendário, que olha o mês de competência sem alterar a navegação global)
+  function dataVencimentoObrigacaoPara(config, ano, mes){
+    if (config.tipoPrazo === "ultimoDiaUtil"){
+      return ultimoDiaUtilDoMes(ano, mes);
+    }
+    if (config.tipoPrazo === "diaFixoMesSeguinte"){
+      return diaFixoMesSeguinteAntecipado(ano, mes, config.dia);
+    }
+    if (config.tipoPrazo === "nEsimoDiaUtilMesSeguinte"){
+      return nEsimoDiaUtilMesSeguinte(ano, mes, config.n, config.sabadoUtil);
+    }
+    return new Date(ano, mes, config.dia);
+  }
+
+  // ---------- CALENDÁRIO VISUAL ----------
+  function construirGradeMes(ano, mesIndex, eventosPorDia){
+    const primeiroDia = new Date(ano, mesIndex, 1);
+    const diasNoMes = new Date(ano, mesIndex + 1, 0).getDate();
+    const offsetInicial = primeiroDia.getDay();
+    const nomesDias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+    let celulas = "";
+    for (let i = 0; i < offsetInicial; i++){
+      celulas += `<div class="calendario-dia vazio"></div>`;
+    }
+    for (let dia = 1; dia <= diasNoMes; dia++){
+      const ehHoje = ano === hoje.getFullYear() && mesIndex === hoje.getMonth() && dia === hoje.getDate();
+      const eventos = eventosPorDia[dia] || [];
+      celulas += `
+        <div class="calendario-dia ${ehHoje ? "hoje" : ""}">
+          <div class="calendario-dia-numero">${dia}</div>
+          ${eventos.map(ev => `<div class="calendario-evento" title="${escapeHtml(ev)}">${escapeHtml(ev)}</div>`).join("")}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="calendario-mes">
+        <div class="calendario-mes-titulo">${meses[mesIndex]} de ${ano}</div>
+        <div class="calendario-grade">
+          ${nomesDias.map(n => `<div class="calendario-dia-nome">${n}</div>`).join("")}
+          ${celulas}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderizarCalendario(){
+    const container = document.getElementById("calendariosContainer");
+    if (!container) return;
+
+    const eventosMesAtual = {};
+    const seguinte = mesSeguinte(currentViewDate.year, currentViewDate.month);
+    const eventosMesSeguinte = {};
+
+    obrigacoesConfig.forEach(o => {
+      const dataVenc = dataVencimentoObrigacaoPara(o, currentViewDate.year, currentViewDate.month);
+      const alvo = (dataVenc.getMonth() === currentViewDate.month && dataVenc.getFullYear() === currentViewDate.year)
+        ? eventosMesAtual
+        : eventosMesSeguinte;
+      const dia = dataVenc.getDate();
+      if (!alvo[dia]) alvo[dia] = [];
+      alvo[dia].push(o.label);
+    });
+
+    container.innerHTML =
+      construirGradeMes(currentViewDate.year, currentViewDate.month, eventosMesAtual) +
+      construirGradeMes(seguinte.ano, seguinte.mesIndex, eventosMesSeguinte);
+  }
+
   function diaFormatado(dataOuDia){
     const data = (dataOuDia instanceof Date)
       ? dataOuDia
@@ -1445,11 +1757,22 @@
     await carregarObrigacoesDoMes(chaveMes());
     renderizarObrigacoes();
     atualizarPainel();
+    renderizarCalendario();
   }
 
   // ---------- MAPEAMENTO DE DADOS (Supabase <-> app) ----------
   function mapEmpresaDb(row){
-    return { id: row.id, codigo: row.codigo, razaoSocial: row.razao_social, cnpj: row.cnpj || "—", email: row.email || "" };
+    return {
+      id: row.id, codigo: row.codigo, razaoSocial: row.razao_social, cnpj: row.cnpj || "—", email: row.email || "",
+      contratos: {
+        fopag: row.contrata_fopag !== false,
+        fgts: row.contrata_fgts !== false,
+        esocial: row.contrata_esocial !== false,
+        dctfweb: row.contrata_dctfweb !== false,
+        ferias: row.contrata_ferias !== false,
+        vtvrponto: row.contrata_vtvrponto !== false
+      }
+    };
   }
 
   function mapSolicitacaoDb(row){
@@ -1557,7 +1880,9 @@
     obrigacoes: "Obrigações Mensais",
     solicitacoes: "Solicitações",
     empresas: "Empresas",
-    emails: "E-mails"
+    emails: "E-mails",
+    calendario: "Calendário",
+    atividade: "Atividade"
   };
 
   menuItems.forEach(item => {
@@ -1626,9 +1951,11 @@
   function calcularProgresso(empresaId){
     const estado = obterEstadoMes()[empresaId];
     if (!estado) return 0;
-    const total = obrigacoesConfig.length;
-    const feitas = obrigacoesConfig.filter(o => estado[o.chave] && estado[o.chave].concluido).length;
-    return Math.round((feitas / total) * 100);
+    const emp = empresas.find(e => e.id === empresaId);
+    const contratadas = emp ? obrigacoesConfig.filter(o => emp.contratos[o.chave]) : obrigacoesConfig;
+    if (contratadas.length === 0) return 0;
+    const feitas = contratadas.filter(o => estado[o.chave] && estado[o.chave].concluido).length;
+    return Math.round((feitas / contratadas.length) * 100);
   }
 
   function atualizarProgresso(empresaId){
@@ -1682,6 +2009,10 @@
       renderizarObrigacoes();
       atualizarPainel();
       mostrarErroGeral("Não foi possível salvar essa alteração. Verifique sua internet e tente novamente.");
+    } else {
+      const empNome = (empresas.find(e => e.id === empresaId) || {}).razaoSocial || empresaId;
+      const labelObrigacao = (obrigacoesConfig.find(o => o.chave === chave) || {}).label || chave;
+      registrarAtividade("obrigacao", `${novoValor ? "Marcou" : "Desmarcou"} "${labelObrigacao}" de ${empNome}`);
     }
   }
 
@@ -1704,6 +2035,16 @@
 
       let checksHtml = "";
       obrigacoesConfig.forEach(o => {
+        if (!emp.contratos[o.chave]){
+          checksHtml += `
+            <td class="check-cell">
+              <div class="check-cell-inner">
+                <span class="nao-contratado" title="Empresa não contrata esta obrigação">—</span>
+              </div>
+            </td>
+          `;
+          return;
+        }
         const entrada = estadoEmpresa[o.chave] || { concluido: false, atualizadoPor: null };
         const feito = entrada.concluido;
         const status = calcularStatus(o.chave, feito);
@@ -1742,6 +2083,52 @@
 
   buscaObrigacoes.addEventListener("input", renderizarObrigacoes);
 
+  function exportarRelatorioMes(){
+    const estadoMes = obterEstadoMes();
+    const nomeMes = `${meses[currentViewDate.month]}_${currentViewDate.year}`;
+
+    const cabecalho = ["Código", "Empresa", "CNPJ/CPF", ...obrigacoesConfig.map(o => o.label), "Progresso"];
+    const linhas = [cabecalho];
+
+    empresas.forEach(emp => {
+      const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
+      const linha = [emp.codigo, emp.razaoSocial, emp.cnpj];
+      obrigacoesConfig.forEach(o => {
+        if (!emp.contratos[o.chave]){
+          linha.push("Não contratado");
+          return;
+        }
+        const entrada = estadoEmpresa[o.chave] || { concluido: false };
+        if (entrada.concluido){
+          linha.push("Concluído");
+        } else {
+          const status = calcularStatus(o.chave, false);
+          linha.push(status.texto);
+        }
+      });
+      linha.push(calcularProgresso(emp.id) + "%");
+      linhas.push(linha);
+    });
+
+    const csv = linhas.map(linha =>
+      linha.map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(";")
+    ).join("\n");
+
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `relatorio-obrigacoes-${nomeMes}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    registrarAtividade("obrigacao", `Exportou relatório de ${meses[currentViewDate.month]} de ${currentViewDate.year}`);
+  }
+
+  document.getElementById("btnExportarRelatorio").addEventListener("click", exportarRelatorioMes);
+
   // ---------- PAINEL ----------
   function atualizarPainel(){
     const estadoMes = obterEstadoMes();
@@ -1752,6 +2139,7 @@
     empresas.forEach(emp => {
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       obrigacoesConfig.forEach(o => {
+        if (!emp.contratos[o.chave]) return;
         const feito = estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido;
         const diff = diffDiasParaHoje(dataVencimentoObrigacao(o));
         if (feito){
@@ -1783,9 +2171,11 @@
       const dataVenc = dataVencimentoObrigacao(o);
       const diff = diffDiasParaHoje(dataVenc);
       const pendentesEmpresas = empresas.filter(emp => {
+        if (!emp.contratos[o.chave]) return false;
         const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
         return !(estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido);
       }).length;
+      const totalContratantes = empresas.filter(emp => emp.contratos[o.chave]).length;
       let status, classe;
       if (diff < 0){
         status = `Atrasado há ${Math.abs(diff)} dia${Math.abs(diff) > 1 ? "s" : ""}`;
@@ -1800,7 +2190,7 @@
         status = `Faltam ${diff} dias`;
         classe = "status-neutro";
       }
-      return { ...o, dataVenc, diff, status, classe, pendentesEmpresas };
+      return { ...o, dataVenc, diff, status, classe, pendentesEmpresas, totalContratantes };
     }).sort((a, b) => a.diff - b.diff);
 
     const lista = document.getElementById("vencimentosLista");
@@ -1808,7 +2198,7 @@
       <div class="vencimento-item">
         <div class="vencimento-info">
           <div class="vencimento-nome">${v.label}</div>
-          <div class="vencimento-detalhe">Vencimento dia ${diaFormatado(v.dataVenc)} · ${v.pendentesEmpresas} de ${empresas.length} empresas pendentes</div>
+          <div class="vencimento-detalhe">Vencimento dia ${diaFormatado(v.dataVenc)} · ${v.pendentesEmpresas} de ${v.totalContratantes} empresas pendentes</div>
         </div>
         <div class="check-status ${v.classe}">${v.status}</div>
       </div>
@@ -1870,6 +2260,12 @@
       campoEmpresaNome.value = emp.razaoSocial;
       campoEmpresaCnpj.value = emp.cnpj === "—" ? "" : emp.cnpj;
       campoEmpresaCodigoSistema.value = emp.codigo;
+      document.getElementById("campoContratoFopag").checked = emp.contratos.fopag;
+      document.getElementById("campoContratoEsocial").checked = emp.contratos.esocial;
+      document.getElementById("campoContratoFgts").checked = emp.contratos.fgts;
+      document.getElementById("campoContratoDctfweb").checked = emp.contratos.dctfweb;
+      document.getElementById("campoContratoFerias").checked = emp.contratos.ferias;
+      document.getElementById("campoContratoVtvrponto").checked = emp.contratos.vtvrponto;
     } else {
       empresaEmEdicaoId = null;
       modalEmpresaTitulo.textContent = "Nova empresa";
@@ -1919,6 +2315,15 @@
       return;
     }
 
+    const contratosPayload = {
+      contrata_fopag: document.getElementById("campoContratoFopag").checked,
+      contrata_esocial: document.getElementById("campoContratoEsocial").checked,
+      contrata_fgts: document.getElementById("campoContratoFgts").checked,
+      contrata_dctfweb: document.getElementById("campoContratoDctfweb").checked,
+      contrata_ferias: document.getElementById("campoContratoFerias").checked,
+      contrata_vtvrponto: document.getElementById("campoContratoVtvrponto").checked
+    };
+
     const btnSalvar = formEmpresa.querySelector("button[type=submit]");
     btnSalvar.disabled = true;
 
@@ -1927,9 +2332,11 @@
         const { error } = await supabaseClient.from("empresas").update({
           codigo: codigoSistema,
           razao_social: nome,
-          cnpj: cnpj || "—"
+          cnpj: cnpj || "—",
+          ...contratosPayload
         }).eq("id", empresaEmEdicaoId);
         if (error) throw error;
+        await registrarAtividade("empresa", `Empresa "${nome}" editada`);
       } else {
         const novoId = gerarIdEmpresa();
         const { error } = await supabaseClient.from("empresas").insert({
@@ -1937,10 +2344,12 @@
           codigo: codigoSistema,
           razao_social: nome,
           cnpj: cnpj || "—",
-          email: ""
+          email: "",
+          ...contratosPayload
         });
         if (error) throw error;
         garantirEstadoEmpresaNoCache(novoId);
+        await registrarAtividade("empresa", `Empresa "${nome}" cadastrada`);
       }
 
       fecharModalEmpresa();
@@ -1969,6 +2378,7 @@
     }
 
     await recarregarTudoAposMudarEmpresas();
+    registrarAtividade("empresa", `Empresa "${emp.razaoSocial}" excluída`);
   }
 
   // ---------- RENDER E-MAILS ----------
@@ -2081,9 +2491,11 @@
 
     emp.email = novoEmail;
     renderizarEmails();
+    registrarAtividade("email", `E-mail de "${emp.razaoSocial}" atualizado`);
   }
 
   buscaEmails.addEventListener("input", renderizarEmails);
+  document.getElementById("buscaAtividade").addEventListener("input", renderizarAtividade);
 
   btnCopiarEmails.addEventListener("click", () => {
     const textoBusca = buscaEmails.value.trim();
@@ -2187,6 +2599,7 @@
     await carregarSolicitacoes();
     renderizarSolicitacoes();
     atualizarPainel();
+    registrarAtividade("solicitacao", `Solicitação "${dadosForm.titulo}" ${solicitacaoEmEdicaoId ? "editada" : "criada"}`);
   });
 
   document.querySelectorAll(".filtro-btn").forEach(btn => {
@@ -2273,27 +2686,33 @@
   }
 
   async function concluirSolicitacao(id){
+    const s = solicitacoes.find(s => s.id === id);
     const { error } = await supabaseClient.from("solicitacoes").update({ status: "concluida" }).eq("id", id);
     if (error){ mostrarErroGeral("Não foi possível concluir agora."); return; }
     await carregarSolicitacoes();
     renderizarSolicitacoes();
     atualizarPainel();
+    registrarAtividade("solicitacao", `Solicitação "${s ? s.titulo : id}" concluída`);
   }
 
   async function reabrirSolicitacao(id){
+    const s = solicitacoes.find(s => s.id === id);
     const { error } = await supabaseClient.from("solicitacoes").update({ status: "aberto" }).eq("id", id);
     if (error){ mostrarErroGeral("Não foi possível reabrir agora."); return; }
     await carregarSolicitacoes();
     renderizarSolicitacoes();
     atualizarPainel();
+    registrarAtividade("solicitacao", `Solicitação "${s ? s.titulo : id}" reaberta`);
   }
 
   async function excluirSolicitacao(id){
+    const s = solicitacoes.find(s => s.id === id);
     const { error } = await supabaseClient.from("solicitacoes").delete().eq("id", id);
     if (error){ mostrarErroGeral("Não foi possível excluir agora."); return; }
     await carregarSolicitacoes();
     renderizarSolicitacoes();
     atualizarPainel();
+    registrarAtividade("solicitacao", `Solicitação "${s ? s.titulo : id}" excluída`);
   }
 
   function atualizarContadorSolicitacoes(){
@@ -2351,7 +2770,14 @@
       })
       .subscribe();
 
-    canaisRealtime = [canalEmpresas, canalObrigacoes, canalSolicitacoes];
+    const canalAtividade = supabaseClient.channel("mudancas-atividade")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "log_atividade" }, (payload) => {
+        atividades.unshift(mapAtividadeDb(payload.new));
+        renderizarAtividade();
+      })
+      .subscribe();
+
+    canaisRealtime = [canalEmpresas, canalObrigacoes, canalSolicitacoes, canalAtividade];
   }
 
   // ---------- AUTENTICAÇÃO ----------
@@ -2369,6 +2795,7 @@
     await carregarEmpresas();
     await carregarSolicitacoes();
     await carregarObrigacoesDoMes(chaveMes());
+    await carregarAtividade();
 
     atualizarCabecalhoMes();
     renderizarObrigacoes();
@@ -2377,6 +2804,8 @@
     popularSelectEmpresas();
     renderizarSolicitacoes();
     atualizarPainel();
+    renderizarAtividade();
+    renderizarCalendario();
 
     configurarRealtime();
   }
