@@ -621,7 +621,7 @@
     width:100%;
     border-collapse: collapse;
     font-size: 13.5px;
-    min-width: 1080px;
+    min-width: 1240px;
   }
 
   table.obrigacoes th{
@@ -909,6 +909,7 @@
 
   .sol-titulo{ font-weight: 600; color: var(--texto); }
   .sol-descricao{ font-size: 12px; color: var(--texto-suave); margin-top: 2px; max-width: 260px; }
+  .sol-meta{ font-size: 11px; color: var(--texto-suave); margin-top: 4px; font-style: italic; }
 
   .tag-prioridade{
     font-size: 11px;
@@ -1191,6 +1192,7 @@
               <thead>
                 <tr>
                   <th>Empresa</th>
+                  <th class="col-obrigacao">Adiantamento<span class="obrigacao-prazo">dia 15 ou 20 (varia por empresa)</span></th>
                   <th class="col-obrigacao">Envio da Folha<span class="obrigacao-prazo">5º dia útil do mês seguinte</span></th>
                   <th class="col-obrigacao">e-Social<span class="obrigacao-prazo">dia 15 do mês seguinte</span></th>
                   <th class="col-obrigacao">Guia FGTS<span class="obrigacao-prazo">dia 20 do mês seguinte</span></th>
@@ -1334,6 +1336,7 @@
             <div class="form-group">
               <label>Obrigações contratadas</label>
               <div class="contratos-grid">
+                <label class="contrato-item"><input type="checkbox" id="campoContratoAdiantamento" checked> Adiantamento</label>
                 <label class="contrato-item"><input type="checkbox" id="campoContratoFopag" checked> Envio da Folha</label>
                 <label class="contrato-item"><input type="checkbox" id="campoContratoEsocial" checked> e-Social</label>
                 <label class="contrato-item"><input type="checkbox" id="campoContratoFgts" checked> Guia FGTS</label>
@@ -1341,6 +1344,14 @@
                 <label class="contrato-item"><input type="checkbox" id="campoContratoFerias" checked> Controle de Férias</label>
                 <label class="contrato-item"><input type="checkbox" id="campoContratoVtvrponto" checked> VT / VR / Ponto</label>
               </div>
+            </div>
+            <div class="form-group">
+              <label for="campoDiaAdiantamento">Dia do Adiantamento</label>
+              <select id="campoDiaAdiantamento">
+                <option value="15">Dia 15</option>
+                <option value="20" selected>Dia 20</option>
+              </select>
+              <div class="form-hint">Vence dentro do próprio mês de competência, antecipando se cair em fim de semana ou feriado.</div>
             </div>
             <div class="modal-acoes">
               <button type="button" class="btn-secundario" id="btnCancelarFormEmpresa">Cancelar</button>
@@ -1423,6 +1434,7 @@
   let canaisRealtime = [];
 
   const obrigacoesConfig = [
+    { chave: "adiantamento", label: "Adiantamento", tipoPrazo: "diaFixoMesAtualPorEmpresa" },
     { chave: "folha", label: "Envio da Folha", tipoPrazo: "nEsimoDiaUtilMesSeguinte", n: 5, sabadoUtil: true },
     { chave: "esocial", label: "e-Social", tipoPrazo: "diaFixoMesSeguinte", dia: 15 },
     { chave: "fgts", label: "Guia FGTS", tipoPrazo: "diaFixoMesSeguinte", dia: 20 },
@@ -1609,6 +1621,15 @@
     return data;
   }
 
+  // dia fixo dentro do PRÓPRIO mês (usado pelo Adiantamento, cujo dia varia por empresa: 15 ou 20)
+  function diaFixoMesAtualAntecipado(ano, mesIndex, dia){
+    let data = new Date(ano, mesIndex, dia);
+    while (!ehDiaUtil(data, false)){
+      data = somarDias(data, -1);
+    }
+    return data;
+  }
+
   function nEsimoDiaUtilMesSeguinte(ano, mesIndex, n, sabadoUtil){
     const seguinte = mesSeguinte(ano, mesIndex);
     let data = new Date(seguinte.ano, seguinte.mesIndex, 1);
@@ -1622,7 +1643,7 @@
     }
   }
 
-  function dataVencimentoObrigacao(config){
+  function dataVencimentoObrigacao(config, emp){
     if (config.tipoPrazo === "ultimoDiaUtil"){
       return ultimoDiaUtilDoMes(currentViewDate.year, currentViewDate.month);
     }
@@ -1632,11 +1653,15 @@
     if (config.tipoPrazo === "nEsimoDiaUtilMesSeguinte"){
       return nEsimoDiaUtilMesSeguinte(currentViewDate.year, currentViewDate.month, config.n, config.sabadoUtil);
     }
+    if (config.tipoPrazo === "diaFixoMesAtualPorEmpresa"){
+      const dia = (emp && emp.diaAdiantamento) || 20;
+      return diaFixoMesAtualAntecipado(currentViewDate.year, currentViewDate.month, dia);
+    }
     return new Date(currentViewDate.year, currentViewDate.month, config.dia);
   }
 
   // versão parametrizada (para o calendário, que olha o mês de competência sem alterar a navegação global)
-  function dataVencimentoObrigacaoPara(config, ano, mes){
+  function dataVencimentoObrigacaoPara(config, ano, mes, dia){
     if (config.tipoPrazo === "ultimoDiaUtil"){
       return ultimoDiaUtilDoMes(ano, mes);
     }
@@ -1645,6 +1670,9 @@
     }
     if (config.tipoPrazo === "nEsimoDiaUtilMesSeguinte"){
       return nEsimoDiaUtilMesSeguinte(ano, mes, config.n, config.sabadoUtil);
+    }
+    if (config.tipoPrazo === "diaFixoMesAtualPorEmpresa"){
+      return diaFixoMesAtualAntecipado(ano, mes, dia || 20);
     }
     return new Date(ano, mes, config.dia);
   }
@@ -1691,6 +1719,18 @@
     const eventosMesSeguinte = {};
 
     obrigacoesConfig.forEach(o => {
+      if (o.chave === "adiantamento"){
+        const diasUsados = new Set(
+          empresas.filter(emp => emp.contratos.adiantamento).map(emp => emp.diaAdiantamento || 20)
+        );
+        diasUsados.forEach(diaConfig => {
+          const dataVenc = diaFixoMesAtualAntecipado(currentViewDate.year, currentViewDate.month, diaConfig);
+          const dia = dataVenc.getDate();
+          if (!eventosMesAtual[dia]) eventosMesAtual[dia] = [];
+          eventosMesAtual[dia].push(`Adiantamento (dia ${diaConfig})`);
+        });
+        return;
+      }
       const dataVenc = dataVencimentoObrigacaoPara(o, currentViewDate.year, currentViewDate.month);
       const alvo = (dataVenc.getMonth() === currentViewDate.month && dataVenc.getFullYear() === currentViewDate.year)
         ? eventosMesAtual
@@ -1723,9 +1763,9 @@
     return email.split("@")[0];
   }
 
-  function calcularStatus(chave, feito){
+  function calcularStatus(chave, feito, emp){
     const config = obrigacoesConfig.find(o => o.chave === chave);
-    const dataVencimento = dataVencimentoObrigacao(config);
+    const dataVencimento = dataVencimentoObrigacao(config, emp);
     const diff = diffDiasParaHoje(dataVencimento);
 
     if (feito){
@@ -1764,7 +1804,9 @@
   function mapEmpresaDb(row){
     return {
       id: row.id, codigo: row.codigo, razaoSocial: row.razao_social, cnpj: row.cnpj || "—", email: row.email || "",
+      diaAdiantamento: row.dia_adiantamento || 20,
       contratos: {
+        adiantamento: row.contrata_adiantamento !== false,
         folha: row.contrata_fopag !== false,
         fgts: row.contrata_fgts !== false,
         esocial: row.contrata_esocial !== false,
@@ -1784,7 +1826,9 @@
       prazo: row.prazo,
       prioridade: row.prioridade,
       status: row.status,
-      criadoPor: row.criado_por
+      criadoPor: row.criado_por,
+      concluidoPor: row.concluido_por,
+      concluidoEm: row.concluido_em
     };
   }
 
@@ -1981,7 +2025,8 @@
     btn.textContent = novoValor ? "✓" : "";
 
     const statusEl = document.getElementById(`status-${empresaId}-${chave}`);
-    const status = calcularStatus(chave, novoValor);
+    const empAtual = empresas.find(e => e.id === empresaId);
+    const status = calcularStatus(chave, novoValor, empAtual);
     statusEl.className = "check-status " + status.classe;
     statusEl.textContent = status.texto;
 
@@ -2047,13 +2092,13 @@
         }
         const entrada = estadoEmpresa[o.chave] || { concluido: false, atualizadoPor: null };
         const feito = entrada.concluido;
-        const status = calcularStatus(o.chave, feito);
+        const status = calcularStatus(o.chave, feito, emp);
         const quemTexto = feito && entrada.atualizadoPor ? `por ${nomeCurto(entrada.atualizadoPor)}` : "";
         checksHtml += `
           <td class="check-cell">
             <div class="check-cell-inner">
               <button class="check-btn ${feito ? "done" : ""}" onclick="toggleObrigacao('${emp.id}','${o.chave}', this)">${feito ? "✓" : ""}</button>
-              <div class="check-data">${diaFormatado(dataVencimentoObrigacao(o))}</div>
+              <div class="check-data">${diaFormatado(dataVencimentoObrigacao(o, emp))}</div>
               <div class="check-status ${status.classe}" id="status-${emp.id}-${o.chave}">${status.texto}</div>
               <div class="check-quem" id="quem-${emp.id}-${o.chave}">${quemTexto}</div>
             </div>
@@ -2102,7 +2147,7 @@
         if (entrada.concluido){
           linha.push("Concluído");
         } else {
-          const status = calcularStatus(o.chave, false);
+          const status = calcularStatus(o.chave, false, emp);
           linha.push(status.texto);
         }
       });
@@ -2141,7 +2186,7 @@
       obrigacoesConfig.forEach(o => {
         if (!emp.contratos[o.chave]) return;
         const feito = estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido;
-        const diff = diffDiasParaHoje(dataVencimentoObrigacao(o));
+        const diff = diffDiasParaHoje(dataVencimentoObrigacao(o, emp));
         if (feito){
           entregues++;
         } else if (diff < 0){
@@ -2167,7 +2212,47 @@
       </div>
     `).join("");
 
-    const vencimentos = obrigacoesConfig.map(o => {
+    function classificarDiff(diff){
+      if (diff < 0){
+        return { status: `Atrasado há ${Math.abs(diff)} dia${Math.abs(diff) > 1 ? "s" : ""}`, classe: "status-vermelho" };
+      }
+      if (diff === 0){
+        return { status: "Vence hoje", classe: "status-ambar" };
+      }
+      if (diff <= 2){
+        return { status: `Faltam ${diff} dia${diff > 1 ? "s" : ""}`, classe: "status-ambar" };
+      }
+      return { status: `Faltam ${diff} dias`, classe: "status-neutro" };
+    }
+
+    const vencimentos = [];
+    obrigacoesConfig.forEach(o => {
+      if (o.chave === "adiantamento"){
+        const gruposPorDia = {};
+        empresas.forEach(emp => {
+          if (!emp.contratos.adiantamento) return;
+          const dia = emp.diaAdiantamento || 20;
+          if (!gruposPorDia[dia]) gruposPorDia[dia] = [];
+          gruposPorDia[dia].push(emp);
+        });
+        Object.keys(gruposPorDia).sort().forEach(diaStr => {
+          const dia = Number(diaStr);
+          const empresasGrupo = gruposPorDia[dia];
+          const dataVenc = diaFixoMesAtualAntecipado(currentViewDate.year, currentViewDate.month, dia);
+          const diff = diffDiasParaHoje(dataVenc);
+          const pendentesEmpresas = empresasGrupo.filter(emp => {
+            const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
+            return !(estadoEmpresa.adiantamento && estadoEmpresa.adiantamento.concluido);
+          }).length;
+          const { status, classe } = classificarDiff(diff);
+          vencimentos.push({
+            chave: "adiantamento", label: `Adiantamento (dia ${dia})`, dataVenc, diff, status, classe,
+            pendentesEmpresas, totalContratantes: empresasGrupo.length
+          });
+        });
+        return;
+      }
+
       const dataVenc = dataVencimentoObrigacao(o);
       const diff = diffDiasParaHoje(dataVenc);
       const pendentesEmpresas = empresas.filter(emp => {
@@ -2176,22 +2261,10 @@
         return !(estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido);
       }).length;
       const totalContratantes = empresas.filter(emp => emp.contratos[o.chave]).length;
-      let status, classe;
-      if (diff < 0){
-        status = `Atrasado há ${Math.abs(diff)} dia${Math.abs(diff) > 1 ? "s" : ""}`;
-        classe = "status-vermelho";
-      } else if (diff === 0){
-        status = "Vence hoje";
-        classe = "status-ambar";
-      } else if (diff <= 2){
-        status = `Faltam ${diff} dia${diff > 1 ? "s" : ""}`;
-        classe = "status-ambar";
-      } else {
-        status = `Faltam ${diff} dias`;
-        classe = "status-neutro";
-      }
-      return { ...o, dataVenc, diff, status, classe, pendentesEmpresas, totalContratantes };
-    }).sort((a, b) => a.diff - b.diff);
+      const { status, classe } = classificarDiff(diff);
+      vencimentos.push({ ...o, dataVenc, diff, status, classe, pendentesEmpresas, totalContratantes });
+    });
+    vencimentos.sort((a, b) => a.diff - b.diff);
 
     const lista = document.getElementById("vencimentosLista");
     lista.innerHTML = vencimentos.map(v => `
@@ -2260,12 +2333,14 @@
       campoEmpresaNome.value = emp.razaoSocial;
       campoEmpresaCnpj.value = emp.cnpj === "—" ? "" : emp.cnpj;
       campoEmpresaCodigoSistema.value = emp.codigo;
+      document.getElementById("campoContratoAdiantamento").checked = emp.contratos.adiantamento;
       document.getElementById("campoContratoFopag").checked = emp.contratos.folha;
       document.getElementById("campoContratoEsocial").checked = emp.contratos.esocial;
       document.getElementById("campoContratoFgts").checked = emp.contratos.fgts;
       document.getElementById("campoContratoDctfweb").checked = emp.contratos.dctfweb;
       document.getElementById("campoContratoFerias").checked = emp.contratos.ferias;
       document.getElementById("campoContratoVtvrponto").checked = emp.contratos.vtvrponto;
+      document.getElementById("campoDiaAdiantamento").value = String(emp.diaAdiantamento || 20);
     } else {
       empresaEmEdicaoId = null;
       modalEmpresaTitulo.textContent = "Nova empresa";
@@ -2316,12 +2391,14 @@
     }
 
     const contratosPayload = {
+      contrata_adiantamento: document.getElementById("campoContratoAdiantamento").checked,
       contrata_fopag: document.getElementById("campoContratoFopag").checked,
       contrata_esocial: document.getElementById("campoContratoEsocial").checked,
       contrata_fgts: document.getElementById("campoContratoFgts").checked,
       contrata_dctfweb: document.getElementById("campoContratoDctfweb").checked,
       contrata_ferias: document.getElementById("campoContratoFerias").checked,
-      contrata_vtvrponto: document.getElementById("campoContratoVtvrponto").checked
+      contrata_vtvrponto: document.getElementById("campoContratoVtvrponto").checked,
+      dia_adiantamento: Number(document.getElementById("campoDiaAdiantamento").value)
     };
 
     const btnSalvar = formEmpresa.querySelector("button[type=submit]");
@@ -2655,11 +2732,15 @@
       tbodySol.innerHTML = filtradas.map(s => {
         const emp = empresas.find(e => e.id === s.empresaId);
         const statusPrazo = calcularStatusPrazo(s.prazo, s.status);
+        const metaPartes = [];
+        if (s.criadoPor) metaPartes.push(`Criado por ${nomeCurto(s.criadoPor)}`);
+        if (s.status === "concluida" && s.concluidoPor) metaPartes.push(`Concluído por ${nomeCurto(s.concluidoPor)}`);
         return `
           <tr>
             <td>
               <div class="sol-titulo">${escapeHtml(s.titulo)}</div>
               ${s.descricao ? `<div class="sol-descricao">${escapeHtml(s.descricao)}</div>` : ""}
+              ${metaPartes.length ? `<div class="sol-meta">${escapeHtml(metaPartes.join(" · "))}</div>` : ""}
             </td>
             <td>${emp ? escapeHtml(emp.razaoSocial) : "—"}</td>
             <td>
@@ -2687,7 +2768,11 @@
 
   async function concluirSolicitacao(id){
     const s = solicitacoes.find(s => s.id === id);
-    const { error } = await supabaseClient.from("solicitacoes").update({ status: "concluida" }).eq("id", id);
+    const { error } = await supabaseClient.from("solicitacoes").update({
+      status: "concluida",
+      concluido_por: usuarioAtual.email,
+      concluido_em: new Date().toISOString()
+    }).eq("id", id);
     if (error){ mostrarErroGeral("Não foi possível concluir agora."); return; }
     await carregarSolicitacoes();
     renderizarSolicitacoes();
@@ -2697,7 +2782,11 @@
 
   async function reabrirSolicitacao(id){
     const s = solicitacoes.find(s => s.id === id);
-    const { error } = await supabaseClient.from("solicitacoes").update({ status: "aberto" }).eq("id", id);
+    const { error } = await supabaseClient.from("solicitacoes").update({
+      status: "aberto",
+      concluido_por: null,
+      concluido_em: null
+    }).eq("id", id);
     if (error){ mostrarErroGeral("Não foi possível reabrir agora."); return; }
     await carregarSolicitacoes();
     renderizarSolicitacoes();
