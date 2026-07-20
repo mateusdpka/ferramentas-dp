@@ -1765,7 +1765,7 @@
     return {
       id: row.id, codigo: row.codigo, razaoSocial: row.razao_social, cnpj: row.cnpj || "—", email: row.email || "",
       contratos: {
-        fopag: row.contrata_fopag !== false,
+        folha: row.contrata_fopag !== false,
         fgts: row.contrata_fgts !== false,
         esocial: row.contrata_esocial !== false,
         dctfweb: row.contrata_dctfweb !== false,
@@ -2260,7 +2260,7 @@
       campoEmpresaNome.value = emp.razaoSocial;
       campoEmpresaCnpj.value = emp.cnpj === "—" ? "" : emp.cnpj;
       campoEmpresaCodigoSistema.value = emp.codigo;
-      document.getElementById("campoContratoFopag").checked = emp.contratos.fopag;
+      document.getElementById("campoContratoFopag").checked = emp.contratos.folha;
       document.getElementById("campoContratoEsocial").checked = emp.contratos.esocial;
       document.getElementById("campoContratoFgts").checked = emp.contratos.fgts;
       document.getElementById("campoContratoDctfweb").checked = emp.contratos.dctfweb;
