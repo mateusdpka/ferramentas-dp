@@ -610,6 +610,24 @@
     margin-top: 12px;
     padding-top: 10px;
     border-top: 1px solid var(--borda);
+    flex-wrap: wrap;
+  }
+
+  .empresa-card.desabilitada{
+    opacity: 0.6;
+    background: var(--fundo);
+  }
+
+  .badge-desabilitada{
+    display:inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--alerta, #b3261e);
+    background: rgba(179,38,30,0.1);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 8px;
   }
 
   /* TABLE */
@@ -1305,6 +1323,11 @@
               <button class="btn-primario" id="btnNovaEmpresa">+ Nova empresa</button>
             </div>
           </div>
+          <div class="filtros-status" id="filtrosStatusEmpresa">
+            <button class="filtro-btn active" data-filtro-empresa="ativas">Ativas</button>
+            <button class="filtro-btn" data-filtro-empresa="desabilitadas">Desabilitadas</button>
+            <button class="filtro-btn" data-filtro-empresa="todas">Todas</button>
+          </div>
           <div class="empresas-grid" id="empresasGrid">
             <!-- gerado via JS -->
           </div>
@@ -1721,7 +1744,7 @@
     obrigacoesConfig.forEach(o => {
       if (o.chave === "adiantamento"){
         const diasUsados = new Set(
-          empresas.filter(emp => emp.contratos.adiantamento).map(emp => emp.diaAdiantamento || 20)
+          empresas.filter(emp => emp.ativa && emp.contratos.adiantamento).map(emp => emp.diaAdiantamento || 20)
         );
         diasUsados.forEach(diaConfig => {
           const dataVenc = diaFixoMesAtualAntecipado(currentViewDate.year, currentViewDate.month, diaConfig);
@@ -1805,6 +1828,7 @@
     return {
       id: row.id, codigo: row.codigo, razaoSocial: row.razao_social, cnpj: row.cnpj || "—", email: row.email || "",
       diaAdiantamento: row.dia_adiantamento || 20,
+      ativa: row.ativa !== false,
       contratos: {
         adiantamento: row.contrata_adiantamento !== false,
         folha: row.contrata_fopag !== false,
@@ -2066,7 +2090,7 @@
     tbody.innerHTML = "";
 
     const textoBusca = buscaObrigacoes.value.trim();
-    const empresasFiltradas = empresas.filter(emp => empresaCombinaComBusca(emp, textoBusca));
+    const empresasFiltradas = empresas.filter(emp => emp.ativa && empresaCombinaComBusca(emp, textoBusca));
 
     if (empresasFiltradas.length === 0){
       obrigacoesVazio.style.display = "block";
@@ -2135,7 +2159,7 @@
     const cabecalho = ["Código", "Empresa", "CNPJ/CPF", ...obrigacoesConfig.map(o => o.label), "Progresso"];
     const linhas = [cabecalho];
 
-    empresas.forEach(emp => {
+    empresas.filter(emp => emp.ativa).forEach(emp => {
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       const linha = [emp.codigo, emp.razaoSocial, emp.cnpj];
       obrigacoesConfig.forEach(o => {
@@ -2181,7 +2205,7 @@
     let atrasadas = 0;
     let vencendoEmBreve = 0;
 
-    empresas.forEach(emp => {
+    empresas.filter(emp => emp.ativa).forEach(emp => {
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       obrigacoesConfig.forEach(o => {
         if (!emp.contratos[o.chave]) return;
@@ -2229,7 +2253,7 @@
     obrigacoesConfig.forEach(o => {
       if (o.chave === "adiantamento"){
         const gruposPorDia = {};
-        empresas.forEach(emp => {
+        empresas.filter(emp => emp.ativa).forEach(emp => {
           if (!emp.contratos.adiantamento) return;
           const dia = emp.diaAdiantamento || 20;
           if (!gruposPorDia[dia]) gruposPorDia[dia] = [];
@@ -2256,11 +2280,11 @@
       const dataVenc = dataVencimentoObrigacao(o);
       const diff = diffDiasParaHoje(dataVenc);
       const pendentesEmpresas = empresas.filter(emp => {
-        if (!emp.contratos[o.chave]) return false;
+        if (!emp.ativa || !emp.contratos[o.chave]) return false;
         const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
         return !(estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido);
       }).length;
-      const totalContratantes = empresas.filter(emp => emp.contratos[o.chave]).length;
+      const totalContratantes = empresas.filter(emp => emp.ativa && emp.contratos[o.chave]).length;
       const { status, classe } = classificarDiff(diff);
       vencimentos.push({ ...o, dataVenc, diff, status, classe, pendentesEmpresas, totalContratantes });
     });
@@ -2282,10 +2306,25 @@
   const empresasGrid = document.getElementById("empresasGrid");
   const empresasVazio = document.getElementById("empresasVazio");
   const buscaEmpresas = document.getElementById("buscaEmpresas");
+  let filtroEmpresaStatus = "ativas";
+
+  document.querySelectorAll("#filtrosStatusEmpresa .filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filtrosStatusEmpresa .filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroEmpresaStatus = btn.dataset.filtroEmpresa;
+      renderizarEmpresas();
+    });
+  });
 
   function renderizarEmpresas(){
     const textoBusca = buscaEmpresas.value.trim();
-    const filtradas = empresas.filter(emp => empresaCombinaComBusca(emp, textoBusca));
+    const filtradas = empresas.filter(emp => {
+      if (!empresaCombinaComBusca(emp, textoBusca)) return false;
+      if (filtroEmpresaStatus === "ativas") return emp.ativa;
+      if (filtroEmpresaStatus === "desabilitadas") return !emp.ativa;
+      return true;
+    });
 
     empresasGrid.innerHTML = "";
     if (filtradas.length === 0){
@@ -2294,19 +2333,42 @@
       empresasVazio.style.display = "none";
       filtradas.forEach(emp => {
         const div = document.createElement("div");
-        div.className = "empresa-card";
+        div.className = "empresa-card" + (emp.ativa ? "" : " desabilitada");
         div.innerHTML = `
           <span class="empresa-codigo">${emp.codigo}</span>
+          ${!emp.ativa ? '<span class="badge-desabilitada">Desabilitada</span>' : ""}
           <div class="empresa-nome">${emp.razaoSocial}</div>
           <div class="empresa-cnpj">CNPJ: ${emp.cnpj}</div>
           <div class="empresa-card-acoes">
             <button class="acao-btn" onclick="abrirModalEmpresa('${emp.id}')">Editar</button>
+            <button class="acao-btn" onclick="alternarAtivaEmpresa('${emp.id}')">${emp.ativa ? "Desativar" : "Reativar"}</button>
             <button class="acao-btn excluir" onclick="excluirEmpresa('${emp.id}')">Excluir</button>
           </div>
         `;
         empresasGrid.appendChild(div);
       });
     }
+  }
+
+  async function alternarAtivaEmpresa(id){
+    const emp = empresas.find(e => e.id === id);
+    if (!emp) return;
+    const novoValor = !emp.ativa;
+    const confirmado = window.confirm(
+      novoValor
+        ? `Reativar "${emp.razaoSocial}"? Ela volta a aparecer nas Obrigações, Painel, Calendário e E-mails.`
+        : `Desativar "${emp.razaoSocial}"? Ela some das Obrigações, Painel, Calendário e E-mails, mas o histórico fica preservado. Pode reativar quando quiser.`
+    );
+    if (!confirmado) return;
+
+    const { error } = await supabaseClient.from("empresas").update({ ativa: novoValor }).eq("id", id);
+    if (error){
+      console.error(error);
+      mostrarErroGeral("Não foi possível atualizar o status da empresa agora.");
+      return;
+    }
+    registrarAtividade("empresa", `Empresa "${emp.razaoSocial}" ${novoValor ? "reativada" : "desabilitada"}`);
+    await recarregarTudoAposMudarEmpresas();
   }
 
   buscaEmpresas.addEventListener("input", renderizarEmpresas);
@@ -2495,7 +2557,7 @@
 
   function renderizarEmails(){
     const textoBusca = buscaEmails.value.trim();
-    const filtradas = empresas.filter(emp => empresaCombinaComBusca(emp, textoBusca));
+    const filtradas = empresas.filter(emp => emp.ativa && empresaCombinaComBusca(emp, textoBusca));
     const comEmail = filtradas.filter(emp => listaEmails(emp).length > 0);
 
     emailsContador.textContent = `${comEmail.length} de ${filtradas.length} empresas com e-mail cadastrado`;
@@ -2576,7 +2638,7 @@
 
   btnCopiarEmails.addEventListener("click", () => {
     const textoBusca = buscaEmails.value.trim();
-    const filtradas = empresas.filter(emp => empresaCombinaComBusca(emp, textoBusca));
+    const filtradas = empresas.filter(emp => emp.ativa && empresaCombinaComBusca(emp, textoBusca));
     const todosEmails = [];
     filtradas.forEach(emp => {
       listaEmails(emp).forEach(e => {
@@ -2591,15 +2653,17 @@
   // ---------- SOLICITAÇÕES ----------
   const campoEmpresa = document.getElementById("campoEmpresa");
 
-  function popularSelectEmpresas(){
+  function popularSelectEmpresas(manterId){
     const valorSelecionado = campoEmpresa.value;
     campoEmpresa.innerHTML = "";
-    empresas.forEach(emp => {
-      const opt = document.createElement("option");
-      opt.value = emp.id;
-      opt.textContent = `${emp.codigo} — ${emp.razaoSocial}`;
-      campoEmpresa.appendChild(opt);
-    });
+    empresas
+      .filter(emp => emp.ativa || emp.id === manterId)
+      .forEach(emp => {
+        const opt = document.createElement("option");
+        opt.value = emp.id;
+        opt.textContent = `${emp.codigo} — ${emp.razaoSocial}${!emp.ativa ? " (desabilitada)" : ""}`;
+        campoEmpresa.appendChild(opt);
+      });
     if (valorSelecionado && empresas.some(e => e.id === valorSelecionado)){
       campoEmpresa.value = valorSelecionado;
     }
@@ -2617,6 +2681,7 @@
       if (!s) return;
       solicitacaoEmEdicaoId = id;
       modalSolicitacaoTitulo.textContent = "Editar solicitação";
+      popularSelectEmpresas(s.empresaId);
       document.getElementById("campoTitulo").value = s.titulo;
       campoEmpresa.value = s.empresaId;
       document.getElementById("campoDescricao").value = s.descricao || "";
@@ -2626,6 +2691,7 @@
     } else {
       solicitacaoEmEdicaoId = null;
       modalSolicitacaoTitulo.textContent = "Nova solicitação";
+      popularSelectEmpresas();
     }
     modalOverlay.classList.add("active");
     document.getElementById("campoTitulo").focus();
