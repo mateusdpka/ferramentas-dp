@@ -738,6 +738,17 @@
     margin-bottom: 8px;
   }
 
+  .empresa-codigo-inline{
+    display:inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--marca-dourado);
+    background: rgba(166,122,61,0.1);
+    padding: 2px 7px;
+    border-radius: 6px;
+    margin-right: 6px;
+  }
+
   .empresa-nome{
     font-size: 14px;
     font-weight: 600;
@@ -2877,21 +2888,30 @@
   }
 
   function calcularResumoSolicitacoes(){
-    const abertas = solicitacoes.filter(s => s.status === "aberto");
+    const emAberto = solicitacoes.filter(s => s.status === "aberto");
+    const emAndamento = solicitacoes.filter(s => s.status === "andamento");
     const concluidas = solicitacoes.filter(s => s.status === "concluida");
+    const pendentes = emAberto.concat(emAndamento);
     const porPrioridade = { alta: 0, media: 0, baixa: 0 };
-    abertas.forEach(s => { if (porPrioridade[s.prioridade] !== undefined) porPrioridade[s.prioridade]++; });
-    return { totalAbertas: abertas.length, totalConcluidas: concluidas.length, porPrioridade };
+    pendentes.forEach(s => { if (porPrioridade[s.prioridade] !== undefined) porPrioridade[s.prioridade]++; });
+    return {
+      totalEmAberto: emAberto.length,
+      totalEmAndamento: emAndamento.length,
+      totalConcluidas: concluidas.length,
+      totalPendentes: pendentes.length,
+      porPrioridade
+    };
   }
 
   function renderizarGraficoSolicitacoes(){
     const container = document.getElementById("graficoSolicitacoesContainer");
     if (!container) return;
     const r = calcularResumoSolicitacoes();
-    const total = r.totalAbertas + r.totalConcluidas;
+    const total = r.totalEmAberto + r.totalEmAndamento + r.totalConcluidas;
 
     const donut = criarGraficoDonut([
-      { valor: r.totalAbertas, cor: "#a67a3d" },
+      { valor: r.totalEmAberto, cor: "#a67a3d" },
+      { valor: r.totalEmAndamento, cor: "#6b4fa0" },
       { valor: r.totalConcluidas, cor: "#2f7a5c" }
     ]);
 
@@ -2908,7 +2928,11 @@
       <div class="grafico-legenda">
         <div class="grafico-legenda-item">
           <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#a67a3d;"></span>Em aberto</span>
-          <span class="grafico-legenda-valor">${r.totalAbertas}</span>
+          <span class="grafico-legenda-valor">${r.totalEmAberto}</span>
+        </div>
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#6b4fa0;"></span>Em andamento</span>
+          <span class="grafico-legenda-valor">${r.totalEmAndamento}</span>
         </div>
         <div class="grafico-legenda-item">
           <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#2f7a5c;"></span>Concluídas</span>
@@ -2916,15 +2940,15 @@
         </div>
         <div style="height:1px; background:var(--borda); margin:4px 0;"></div>
         <div class="grafico-legenda-item">
-          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#b3261e;"></span>Abertas · prioridade alta</span>
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#b3261e;"></span>Pendentes · prioridade alta</span>
           <span class="grafico-legenda-valor">${r.porPrioridade.alta}</span>
         </div>
         <div class="grafico-legenda-item">
-          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#9a5b12;"></span>Abertas · prioridade média</span>
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#9a5b12;"></span>Pendentes · prioridade média</span>
           <span class="grafico-legenda-valor">${r.porPrioridade.media}</span>
         </div>
         <div class="grafico-legenda-item">
-          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#3a6b8a;"></span>Abertas · prioridade baixa</span>
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#3a6b8a;"></span>Pendentes · prioridade baixa</span>
           <span class="grafico-legenda-valor">${r.porPrioridade.baixa}</span>
         </div>
       </div>
@@ -2957,7 +2981,7 @@
       { valor: entregues, label: "Obrigações entregues", classe: "indicador-verde" },
       { valor: atrasadas, label: "Obrigações atrasadas", classe: "indicador-vermelho" },
       { valor: vencendoEmBreve, label: "Vencendo em breve", classe: "indicador-ambar" },
-      { valor: solicitacoes.filter(s => s.status === "aberto").length, label: "Solicitações abertas", classe: "indicador-neutro" }
+      { valor: solicitacoes.filter(s => s.status !== "concluida").length, label: "Solicitações abertas", classe: "indicador-neutro" }
     ];
 
     const grid = document.getElementById("indicadoresGrid");
@@ -3558,7 +3582,7 @@
               ${s.descricao ? `<div class="sol-descricao">${escapeHtml(s.descricao)}</div>` : ""}
               ${metaPartes.length ? `<div class="sol-meta">${escapeHtml(metaPartes.join(" · "))}</div>` : ""}
             </td>
-            <td>${emp ? escapeHtml(emp.razaoSocial) : "—"}</td>
+            <td>${emp ? `<span class="empresa-codigo-inline">${escapeHtml(emp.codigo)}</span> ${escapeHtml(emp.razaoSocial)}` : "—"}</td>
             <td>
               <div>${formatarDataBR(s.prazo)}</div>
               <span class="check-status ${statusPrazo.classe}">${statusPrazo.texto}</span>
@@ -3621,7 +3645,7 @@
   }
 
   function atualizarContadorSolicitacoes(){
-    const abertas = solicitacoes.filter(s => s.status === "aberto").length;
+    const abertas = solicitacoes.filter(s => s.status !== "concluida").length;
     const badge = document.getElementById("badgeSolicitacoes");
     if (abertas > 0){
       badge.style.display = "inline-block";
