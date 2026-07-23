@@ -1059,6 +1059,34 @@
     border-color: var(--marca-escura);
   }
 
+  .filtros-obrigacoes-linha{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .filtros-obrigacoes-linha .filtros-status{
+    margin-bottom: 0;
+  }
+
+  .filtro-select{
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--borda);
+    background: var(--fundo);
+    color: var(--texto);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .filtro-select:focus{
+    outline: 2px solid var(--marca-dourado);
+    outline-offset: 1px;
+  }
+
   table.solicitacoes-table{
     width:100%;
     border-collapse: collapse;
@@ -1376,6 +1404,18 @@
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
               <input type="text" class="campo-busca" id="buscaObrigacoes" placeholder="Buscar empresa por nome, código ou CNPJ...">
               <button class="btn-secundario" id="btnExportarRelatorio">Exportar relatório do mês</button>
+            </div>
+          </div>
+          <div class="filtros-obrigacoes-linha">
+            <select id="filtroObrigacaoTipo" class="filtro-select">
+              <option value="todas">Todas as obrigações</option>
+              <!-- demais opções geradas via JS -->
+            </select>
+            <div class="filtros-status" id="filtrosStatusObrigacao">
+              <button class="filtro-btn active" data-filtro-status="todas">Todas</button>
+              <button class="filtro-btn" data-filtro-status="pendentes">Pendentes</button>
+              <button class="filtro-btn" data-filtro-status="atrasadas">Atrasadas</button>
+              <button class="filtro-btn" data-filtro-status="concluidas">Concluídas</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -2438,6 +2478,55 @@
   const tbody = document.getElementById("tabelaObrigacoesBody");
   const obrigacoesVazio = document.getElementById("obrigacoesVazio");
   const buscaObrigacoes = document.getElementById("buscaObrigacoes");
+  const filtroObrigacaoTipoEl = document.getElementById("filtroObrigacaoTipo");
+  let filtroObrigacaoTipo = "todas";
+  let filtroObrigacaoStatus = "todas";
+
+  obrigacoesConfig.forEach(o => {
+    const opt = document.createElement("option");
+    opt.value = o.chave;
+    opt.textContent = o.label;
+    filtroObrigacaoTipoEl.appendChild(opt);
+  });
+
+  filtroObrigacaoTipoEl.addEventListener("change", () => {
+    filtroObrigacaoTipo = filtroObrigacaoTipoEl.value;
+    renderizarObrigacoes();
+  });
+
+  document.querySelectorAll("#filtrosStatusObrigacao .filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filtrosStatusObrigacao .filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroObrigacaoStatus = btn.dataset.filtroStatus;
+      renderizarObrigacoes();
+    });
+  });
+
+  // decide se a empresa deve aparecer na tabela, de acordo com os filtros de obrigação/status escolhidos
+  function empresaBateFiltroObrigacao(emp, estadoEmpresa){
+    if (filtroObrigacaoStatus === "todas") return true;
+
+    const relevantes = filtroObrigacaoTipo === "todas"
+      ? obrigacoesConfig.filter(o => emp.contratos[o.chave])
+      : obrigacoesConfig.filter(o => o.chave === filtroObrigacaoTipo && emp.contratos[o.chave]);
+
+    if (relevantes.length === 0) return false;
+
+    function estaConcluida(o){
+      const entrada = estadoEmpresa[o.chave] || { concluido: false };
+      return entrada.concluido;
+    }
+    function estaAtrasada(o){
+      const entrada = estadoEmpresa[o.chave] || { concluido: false };
+      return !entrada.concluido && diffDiasParaHoje(dataVencimentoObrigacao(o, emp)) < 0;
+    }
+
+    if (filtroObrigacaoStatus === "concluidas") return relevantes.every(estaConcluida);
+    if (filtroObrigacaoStatus === "pendentes") return relevantes.some(o => !estaConcluida(o));
+    if (filtroObrigacaoStatus === "atrasadas") return relevantes.some(estaAtrasada);
+    return true;
+  }
 
   function calcularProgresso(empresaId){
     const estado = obterEstadoMes()[empresaId];
@@ -2587,7 +2676,12 @@
     tbody.innerHTML = "";
 
     const textoBusca = buscaObrigacoes.value.trim();
-    const empresasFiltradas = empresas.filter(emp => emp.ativa && empresaCombinaComBusca(emp, textoBusca));
+    const estadoMesFiltro = obterEstadoMes();
+    const empresasFiltradas = empresas.filter(emp =>
+      emp.ativa &&
+      empresaCombinaComBusca(emp, textoBusca) &&
+      empresaBateFiltroObrigacao(emp, estadoMesFiltro[emp.id] || estadoVazioParaEmpresa())
+    );
 
     if (empresasFiltradas.length === 0){
       obrigacoesVazio.style.display = "block";
