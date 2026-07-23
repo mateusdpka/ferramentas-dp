@@ -465,6 +465,152 @@
     flex-shrink: 0;
   }
 
+  /* ANIVERSÁRIOS */
+  .aniversario-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--borda);
+  }
+  .aniversario-item:last-child{ border-bottom: none; }
+
+  .aniversario-nome{
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--texto);
+  }
+
+  .aniversario-data{
+    font-size: 12.5px;
+    color: var(--texto-suave);
+    margin-top: 2px;
+  }
+
+  .aniversario-acoes{
+    display:flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .aniversario-badge{
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .aniversario-badge.hoje{ background: rgba(166,122,61,0.16); color: var(--marca-dourado); }
+  .aniversario-badge.proximo{ background: var(--fundo); color: var(--texto-suave); }
+
+  .painel-aniversarios{
+    margin-top: 20px;
+  }
+
+  .painel-aniversario-linha{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 10px 14px;
+    background: rgba(166,122,61,0.06);
+    border: 1px solid rgba(166,122,61,0.2);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13.5px;
+  }
+
+  /* DASHBOARD DE GRÁFICOS */
+  .dashboard-graficos{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  @media (max-width: 800px){
+    .dashboard-graficos{ grid-template-columns: 1fr; }
+  }
+
+  .grafico-card{
+    display:flex;
+    flex-direction:column;
+  }
+
+  .grafico-conteudo{
+    display:flex;
+    align-items:center;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content:center;
+  }
+
+  .grafico-donut-wrap{
+    position:relative;
+    flex-shrink: 0;
+  }
+
+  .grafico-donut-centro{
+    position:absolute;
+    top:50%; left:50%;
+    transform: translate(-50%, -50%);
+    text-align:center;
+  }
+
+  .grafico-donut-centro-valor{
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--texto);
+  }
+
+  .grafico-donut-centro-label{
+    font-size: 10.5px;
+    color: var(--texto-suave);
+    margin-top: 2px;
+  }
+
+  .grafico-legenda{
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .grafico-legenda-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size: 13px;
+    gap: 10px;
+  }
+
+  .grafico-legenda-rotulo{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    color: var(--texto);
+  }
+
+  .grafico-legenda-ponto{
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+
+  .grafico-legenda-valor{
+    font-weight: 700;
+    color: var(--texto);
+  }
+
+  .grafico-vazio{
+    font-size: 13px;
+    color: var(--texto-suave);
+    text-align:center;
+    padding: 20px 0;
+  }
+
   .emails-toolbar{
     display:flex;
     align-items:center;
@@ -1160,6 +1306,7 @@
       <button class="menu-item" data-view="emails"><span class="menu-icon"></span>E-mails</button>
       <button class="menu-item" data-view="calendario"><span class="menu-icon"></span>Calendário</button>
       <button class="menu-item" data-view="atividade"><span class="menu-icon"></span>Atividade</button>
+      <button class="menu-item" data-view="aniversarios"><span class="menu-icon"></span>Aniversários</button>
     </nav>
     <div class="sidebar-rodape">
       <div class="sidebar-usuario" id="sidebarUsuarioEmail">—</div>
@@ -1186,6 +1333,17 @@
       <section class="view active" id="view-painel">
         <div class="indicadores-grid" id="indicadoresGrid">
           <!-- gerado via JS -->
+        </div>
+        <div id="painelAniversariosContainer"></div>
+        <div class="dashboard-graficos">
+          <div class="card grafico-card">
+            <h3 class="card-title">Progresso das obrigações do mês</h3>
+            <div class="grafico-conteudo" id="graficoObrigacoesContainer"></div>
+          </div>
+          <div class="card grafico-card">
+            <h3 class="card-title">Solicitações</h3>
+            <div class="grafico-conteudo" id="graficoSolicitacoesContainer"></div>
+          </div>
         </div>
         <div class="card">
           <h3 class="card-title">Próximos vencimentos</h3>
@@ -1437,6 +1595,42 @@
         </div>
       </section>
 
+      <!-- ANIVERSÁRIOS -->
+      <section class="view" id="view-aniversarios">
+        <div class="card">
+          <div class="secao-header">
+            <h3 class="card-title" style="margin:0;">Aniversários da equipe</h3>
+            <button class="btn-primario" id="btnNovoFuncionario">+ Novo funcionário</button>
+          </div>
+          <div id="listaAniversarios"></div>
+          <div class="empty-state" id="aniversariosVazio" style="display:none;">Nenhum funcionário cadastrado ainda.</div>
+        </div>
+      </section>
+
+      <!-- MODAL FUNCIONÁRIO -->
+      <div class="modal-overlay" id="modalFuncionarioOverlay">
+        <div class="modal">
+          <div class="modal-header">
+            <h3 id="modalFuncionarioTitulo">Novo funcionário</h3>
+            <button class="modal-fechar" id="modalFuncionarioFechar">&times;</button>
+          </div>
+          <form id="formFuncionario">
+            <div class="form-group">
+              <label for="campoFuncionarioNome">Nome</label>
+              <input type="text" id="campoFuncionarioNome" required placeholder="Nome do funcionário">
+            </div>
+            <div class="form-group">
+              <label for="campoFuncionarioNascimento">Data de nascimento</label>
+              <input type="date" id="campoFuncionarioNascimento" required>
+            </div>
+            <div class="modal-acoes">
+              <button type="button" class="btn-secundario" id="btnCancelarFormFuncionario">Cancelar</button>
+              <button type="submit" class="btn-primario">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1515,7 +1709,8 @@
     obrigacao: "Obrigação",
     empresa: "Empresa",
     solicitacao: "Solicitação",
-    email: "E-mail"
+    email: "E-mail",
+    funcionario: "Funcionário"
   };
 
   function formatarDataHoraCompleta(isoString){
@@ -1553,6 +1748,185 @@
         <span class="atividade-tag">${labelsTipoAtividade[a.tipo] || a.tipo}</span>
       </div>
     `).join("");
+  }
+
+  // ---------- FUNCIONÁRIOS / ANIVERSÁRIOS ----------
+  let funcionarios = [];
+  let funcionarioEmEdicaoId = null;
+
+  function mapFuncionarioDb(row){
+    return { id: row.id, nome: row.nome, dataNascimento: row.data_nascimento };
+  }
+
+  async function carregarFuncionarios(){
+    const { data, error } = await supabaseClient.from("funcionarios").select("*").order("nome");
+    if (error){
+      console.error(error);
+      return;
+    }
+    funcionarios = (data || []).map(mapFuncionarioDb);
+  }
+
+  // calcula a próxima ocorrência do aniversário (esse ano ou o que vem, se já passou) e quantos dias faltam
+  function calcularProximoAniversario(dataNascStr){
+    const [anoNasc, mes, dia] = dataNascStr.split("-").map(Number);
+    let proximaData = new Date(hojeSemHora.getFullYear(), mes - 1, dia);
+    if (proximaData < hojeSemHora){
+      proximaData = new Date(hojeSemHora.getFullYear() + 1, mes - 1, dia);
+    }
+    const diasRestantes = diffDiasParaHoje(proximaData);
+    const idadeCompletando = proximaData.getFullYear() - anoNasc;
+    return { data: proximaData, diasRestantes, idadeCompletando };
+  }
+
+  function formatarDataCurta(data){
+    const dia = String(data.getDate()).padStart(2, "0");
+    const mes = String(data.getMonth() + 1).padStart(2, "0");
+    return `${dia}/${mes}`;
+  }
+
+  function listaFuncionariosOrdenadaPorProximoAniversario(){
+    return funcionarios
+      .map(f => ({ ...f, proximo: calcularProximoAniversario(f.dataNascimento) }))
+      .sort((a, b) => a.proximo.diasRestantes - b.proximo.diasRestantes);
+  }
+
+  function renderizarAniversarios(){
+    const lista = document.getElementById("listaAniversarios");
+    const vazio = document.getElementById("aniversariosVazio");
+    if (!lista) return;
+
+    const ordenados = listaFuncionariosOrdenadaPorProximoAniversario();
+
+    if (ordenados.length === 0){
+      lista.innerHTML = "";
+      vazio.style.display = "block";
+      return;
+    }
+    vazio.style.display = "none";
+
+    lista.innerHTML = ordenados.map(f => {
+      const { data, diasRestantes, idadeCompletando } = f.proximo;
+      let badge;
+      if (diasRestantes === 0){
+        badge = `<span class="aniversario-badge hoje">🎂 Hoje! (completa ${idadeCompletando})</span>`;
+      } else {
+        badge = `<span class="aniversario-badge proximo">Em ${diasRestantes} dia${diasRestantes > 1 ? "s" : ""} (completa ${idadeCompletando})</span>`;
+      }
+      return `
+        <div class="aniversario-item">
+          <div>
+            <div class="aniversario-nome">${escapeHtml(f.nome)}</div>
+            <div class="aniversario-data">${formatarDataCurta(data)}</div>
+          </div>
+          <div class="aniversario-acoes">
+            ${badge}
+            <button class="acao-btn" onclick="abrirModalFuncionario('${f.id}')">Editar</button>
+            <button class="acao-btn excluir" onclick="excluirFuncionario('${f.id}')">Excluir</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function renderizarAniversariosPainel(){
+    const container = document.getElementById("painelAniversariosContainer");
+    if (!container) return;
+    const proximos = listaFuncionariosOrdenadaPorProximoAniversario()
+      .filter(f => f.proximo.diasRestantes <= 7);
+
+    if (proximos.length === 0){
+      container.innerHTML = "";
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="painel-aniversarios">
+        <h3 class="card-title" style="margin-bottom:10px;">Aniversários próximos</h3>
+        ${proximos.map(f => {
+          const texto = f.proximo.diasRestantes === 0
+            ? `🎂 ${escapeHtml(f.nome)} faz aniversário hoje! (completa ${f.proximo.idadeCompletando})`
+            : `🎂 ${escapeHtml(f.nome)} faz aniversário em ${f.proximo.diasRestantes} dia${f.proximo.diasRestantes > 1 ? "s" : ""} (${formatarDataCurta(f.proximo.data)})`;
+          return `<div class="painel-aniversario-linha">${texto}</div>`;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  function abrirModalFuncionario(id){
+    const form = document.getElementById("formFuncionario");
+    form.reset();
+    if (id){
+      const f = funcionarios.find(x => x.id === id);
+      if (!f) return;
+      funcionarioEmEdicaoId = id;
+      document.getElementById("modalFuncionarioTitulo").textContent = "Editar funcionário";
+      document.getElementById("campoFuncionarioNome").value = f.nome;
+      document.getElementById("campoFuncionarioNascimento").value = f.dataNascimento;
+    } else {
+      funcionarioEmEdicaoId = null;
+      document.getElementById("modalFuncionarioTitulo").textContent = "Novo funcionário";
+    }
+    document.getElementById("modalFuncionarioOverlay").classList.add("active");
+  }
+
+  function fecharModalFuncionario(){
+    document.getElementById("modalFuncionarioOverlay").classList.remove("active");
+    funcionarioEmEdicaoId = null;
+  }
+
+  const formFuncionario = document.getElementById("formFuncionario");
+
+  document.getElementById("btnNovoFuncionario").addEventListener("click", () => abrirModalFuncionario(null));
+  document.getElementById("modalFuncionarioFechar").addEventListener("click", fecharModalFuncionario);
+  document.getElementById("btnCancelarFormFuncionario").addEventListener("click", fecharModalFuncionario);
+  document.getElementById("modalFuncionarioOverlay").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("modalFuncionarioOverlay")) fecharModalFuncionario();
+  });
+
+  async function recarregarAniversariosNaTela(){
+    await carregarFuncionarios();
+    renderizarAniversarios();
+    renderizarAniversariosPainel();
+  }
+
+  formFuncionario.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById("campoFuncionarioNome").value.trim();
+    const nascimento = document.getElementById("campoFuncionarioNascimento").value;
+    if (!nome || !nascimento) return;
+
+    try {
+      if (funcionarioEmEdicaoId){
+        const { error } = await supabaseClient.from("funcionarios").update({ nome, data_nascimento: nascimento }).eq("id", funcionarioEmEdicaoId);
+        if (error) throw error;
+        registrarAtividade("funcionario", `Funcionário "${nome}" editado`);
+      } else {
+        const { error } = await supabaseClient.from("funcionarios").insert({ nome, data_nascimento: nascimento });
+        if (error) throw error;
+        registrarAtividade("funcionario", `Funcionário "${nome}" cadastrado`);
+      }
+      fecharModalFuncionario();
+      await recarregarAniversariosNaTela();
+    } catch (erro){
+      console.error(erro);
+      mostrarErroGeral("Não foi possível salvar agora. Tente de novo.");
+    }
+  });
+
+  async function excluirFuncionario(id){
+    const f = funcionarios.find(x => x.id === id);
+    if (!f) return;
+    const confirmado = window.confirm(`Excluir "${f.nome}" da lista de aniversários?`);
+    if (!confirmado) return;
+
+    const { error } = await supabaseClient.from("funcionarios").delete().eq("id", id);
+    if (error){
+      mostrarErroGeral("Não foi possível excluir agora.");
+      return;
+    }
+    registrarAtividade("funcionario", `Funcionário "${f.nome}" excluído`);
+    await recarregarAniversariosNaTela();
   }
 
   // ---------- MÊS ATUAL / NAVEGAÇÃO ----------
@@ -1950,7 +2324,8 @@
     empresas: "Empresas",
     emails: "E-mails",
     calendario: "Calendário",
-    atividade: "Atividade"
+    atividade: "Atividade",
+    aniversarios: "Aniversários"
   };
 
   menuItems.forEach(item => {
@@ -2199,6 +2574,145 @@
   document.getElementById("btnExportarRelatorio").addEventListener("click", exportarRelatorioMes);
 
   // ---------- PAINEL ----------
+  // ---------- GRÁFICOS (DASHBOARD DO PAINEL) ----------
+
+  // gera um SVG de gráfico de rosca a partir de uma lista de segmentos { valor, cor, label }
+  function criarGraficoDonut(segmentos, opcoes){
+    const tamanho = (opcoes && opcoes.tamanho) || 140;
+    const espessura = (opcoes && opcoes.espessura) || 20;
+    const raio = (tamanho / 2) - (espessura / 2);
+    const circunferencia = 2 * Math.PI * raio;
+    const total = segmentos.reduce((soma, s) => soma + s.valor, 0);
+
+    if (total === 0){
+      return `<div class="grafico-vazio">Sem dados neste mês ainda.</div>`;
+    }
+
+    let acumulado = 0;
+    const circulos = segmentos.filter(s => s.valor > 0).map(s => {
+      const fracao = s.valor / total;
+      const comprimento = fracao * circunferencia;
+      const offset = -acumulado * circunferencia;
+      acumulado += fracao;
+      return `<circle cx="${tamanho/2}" cy="${tamanho/2}" r="${raio}" fill="none" stroke="${s.cor}" stroke-width="${espessura}" stroke-dasharray="${comprimento} ${circunferencia - comprimento}" stroke-dashoffset="${offset}" transform="rotate(-90 ${tamanho/2} ${tamanho/2})"></circle>`;
+    }).join("");
+
+    return `<svg width="${tamanho}" height="${tamanho}" viewBox="0 0 ${tamanho} ${tamanho}">${circulos}</svg>`;
+  }
+
+  function calcularResumoObrigacoesMes(){
+    const estadoMes = obterEstadoMes();
+    let total = 0, concluidas = 0, atrasadas = 0;
+    empresas.filter(emp => emp.ativa).forEach(emp => {
+      const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
+      obrigacoesConfig.forEach(o => {
+        if (!emp.contratos[o.chave]) return;
+        total++;
+        const feito = estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido;
+        if (feito){
+          concluidas++;
+        } else if (diffDiasParaHoje(dataVencimentoObrigacao(o, emp)) < 0){
+          atrasadas++;
+        }
+      });
+    });
+    return { total, concluidas, atrasadas, pendentes: total - concluidas - atrasadas };
+  }
+
+  function renderizarGraficoObrigacoes(){
+    const container = document.getElementById("graficoObrigacoesContainer");
+    if (!container) return;
+    const r = calcularResumoObrigacoesMes();
+    const percentual = r.total > 0 ? Math.round((r.concluidas / r.total) * 100) : 0;
+
+    const donut = criarGraficoDonut([
+      { valor: r.concluidas, cor: "#2f7a5c" },
+      { valor: r.atrasadas, cor: "#b3261e" },
+      { valor: r.pendentes, cor: "#a67a3d" }
+    ]);
+
+    container.innerHTML = `
+      <div class="grafico-donut-wrap">
+        ${donut}
+        ${r.total > 0 ? `
+          <div class="grafico-donut-centro">
+            <div class="grafico-donut-centro-valor">${percentual}%</div>
+            <div class="grafico-donut-centro-label">concluído</div>
+          </div>
+        ` : ""}
+      </div>
+      <div class="grafico-legenda">
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#2f7a5c;"></span>Concluídas</span>
+          <span class="grafico-legenda-valor">${r.concluidas}</span>
+        </div>
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#b3261e;"></span>Atrasadas</span>
+          <span class="grafico-legenda-valor">${r.atrasadas}</span>
+        </div>
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#a67a3d;"></span>Pendentes</span>
+          <span class="grafico-legenda-valor">${r.pendentes}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function calcularResumoSolicitacoes(){
+    const abertas = solicitacoes.filter(s => s.status === "aberto");
+    const concluidas = solicitacoes.filter(s => s.status === "concluida");
+    const porPrioridade = { alta: 0, media: 0, baixa: 0 };
+    abertas.forEach(s => { if (porPrioridade[s.prioridade] !== undefined) porPrioridade[s.prioridade]++; });
+    return { totalAbertas: abertas.length, totalConcluidas: concluidas.length, porPrioridade };
+  }
+
+  function renderizarGraficoSolicitacoes(){
+    const container = document.getElementById("graficoSolicitacoesContainer");
+    if (!container) return;
+    const r = calcularResumoSolicitacoes();
+    const total = r.totalAbertas + r.totalConcluidas;
+
+    const donut = criarGraficoDonut([
+      { valor: r.totalAbertas, cor: "#a67a3d" },
+      { valor: r.totalConcluidas, cor: "#2f7a5c" }
+    ]);
+
+    container.innerHTML = `
+      <div class="grafico-donut-wrap">
+        ${donut}
+        ${total > 0 ? `
+          <div class="grafico-donut-centro">
+            <div class="grafico-donut-centro-valor">${total}</div>
+            <div class="grafico-donut-centro-label">no total</div>
+          </div>
+        ` : ""}
+      </div>
+      <div class="grafico-legenda">
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#a67a3d;"></span>Em aberto</span>
+          <span class="grafico-legenda-valor">${r.totalAbertas}</span>
+        </div>
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#2f7a5c;"></span>Concluídas</span>
+          <span class="grafico-legenda-valor">${r.totalConcluidas}</span>
+        </div>
+        <div style="height:1px; background:var(--borda); margin:4px 0;"></div>
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#b3261e;"></span>Abertas · prioridade alta</span>
+          <span class="grafico-legenda-valor">${r.porPrioridade.alta}</span>
+        </div>
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#9a5b12;"></span>Abertas · prioridade média</span>
+          <span class="grafico-legenda-valor">${r.porPrioridade.media}</span>
+        </div>
+        <div class="grafico-legenda-item">
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#3a6b8a;"></span>Abertas · prioridade baixa</span>
+          <span class="grafico-legenda-valor">${r.porPrioridade.baixa}</span>
+        </div>
+      </div>
+    `;
+  }
+
   function atualizarPainel(){
     const estadoMes = obterEstadoMes();
     let entregues = 0;
@@ -2300,6 +2814,9 @@
         <div class="check-status ${v.classe}">${v.status}</div>
       </div>
     `).join("");
+
+    renderizarGraficoObrigacoes();
+    renderizarGraficoSolicitacoes();
   }
 
   // ---------- RENDER EMPRESAS ----------
@@ -2932,7 +3449,15 @@
       })
       .subscribe();
 
-    canaisRealtime = [canalEmpresas, canalObrigacoes, canalSolicitacoes, canalAtividade];
+    const canalFuncionarios = supabaseClient.channel("mudancas-funcionarios")
+      .on("postgres_changes", { event: "*", schema: "public", table: "funcionarios" }, async () => {
+        await carregarFuncionarios();
+        renderizarAniversarios();
+        renderizarAniversariosPainel();
+      })
+      .subscribe();
+
+    canaisRealtime = [canalEmpresas, canalObrigacoes, canalSolicitacoes, canalAtividade, canalFuncionarios];
   }
 
   // ---------- AUTENTICAÇÃO ----------
@@ -2951,6 +3476,7 @@
     await carregarSolicitacoes();
     await carregarObrigacoesDoMes(chaveMes());
     await carregarAtividade();
+    await carregarFuncionarios();
 
     atualizarCabecalhoMes();
     renderizarObrigacoes();
@@ -2961,6 +3487,8 @@
     atualizarPainel();
     renderizarAtividade();
     renderizarCalendario();
+    renderizarAniversarios();
+    renderizarAniversariosPainel();
 
     configurarRealtime();
   }
