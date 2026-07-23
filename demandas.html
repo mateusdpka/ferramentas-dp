@@ -3001,8 +3001,11 @@
             return !(estadoEmpresa.adiantamento && estadoEmpresa.adiantamento.concluido);
           }).length;
           const { status, classe } = classificarDiff(diff);
+          const jaConcluidoPorTodos = pendentesEmpresas === 0 && empresasGrupo.length > 0;
           vencimentos.push({
-            chave: "adiantamento", label: `Adiantamento (dia ${dia})`, dataVenc, diff, status, classe,
+            chave: "adiantamento", label: `Adiantamento (dia ${dia})`, dataVenc, diff,
+            status: jaConcluidoPorTodos ? "Concluído" : status,
+            classe: jaConcluidoPorTodos ? "status-verde" : classe,
             pendentesEmpresas, totalContratantes: empresasGrupo.length
           });
         });
@@ -3011,23 +3014,35 @@
 
       const dataVenc = dataVencimentoObrigacao(o);
       const diff = diffDiasParaHoje(dataVenc);
+      const totalContratantes = empresas.filter(emp => emp.ativa && emp.contratos[o.chave]).length;
+      if (totalContratantes === 0) return;
       const pendentesEmpresas = empresas.filter(emp => {
         if (!emp.ativa || !emp.contratos[o.chave]) return false;
         const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
         return !(estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido);
       }).length;
-      const totalContratantes = empresas.filter(emp => emp.ativa && emp.contratos[o.chave]).length;
       const { status, classe } = classificarDiff(diff);
-      vencimentos.push({ ...o, dataVenc, diff, status, classe, pendentesEmpresas, totalContratantes });
+      const jaConcluidoPorTodos = pendentesEmpresas === 0 && totalContratantes > 0;
+      vencimentos.push({
+        ...o, dataVenc, diff,
+        status: jaConcluidoPorTodos ? "Concluído" : status,
+        classe: jaConcluidoPorTodos ? "status-verde" : classe,
+        pendentesEmpresas, totalContratantes
+      });
     });
-    vencimentos.sort((a, b) => a.diff - b.diff);
+    vencimentos.sort((a, b) => {
+      const aFeito = a.pendentesEmpresas === 0;
+      const bFeito = b.pendentesEmpresas === 0;
+      if (aFeito !== bFeito) return aFeito ? 1 : -1;
+      return a.diff - b.diff;
+    });
 
     const lista = document.getElementById("vencimentosLista");
     lista.innerHTML = vencimentos.map(v => `
       <div class="vencimento-item">
         <div class="vencimento-info">
           <div class="vencimento-nome">${v.label}</div>
-          <div class="vencimento-detalhe">Vencimento dia ${diaFormatado(v.dataVenc)} · ${v.pendentesEmpresas} de ${v.totalContratantes} empresas pendentes</div>
+          <div class="vencimento-detalhe">Vencimento dia ${diaFormatado(v.dataVenc)} · ${v.pendentesEmpresas === 0 ? `todas as ${v.totalContratantes} empresas concluíram` : `${v.pendentesEmpresas} de ${v.totalContratantes} empresas pendentes`}</div>
         </div>
         <div class="check-status ${v.classe}">${v.status}</div>
       </div>
