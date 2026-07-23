@@ -324,6 +324,12 @@
     color: var(--texto);
   }
 
+  .card-sub{
+    font-size: 12.5px;
+    color: var(--texto-suave);
+    line-height: 1.5;
+  }
+
   .empty-state{
     color: var(--texto-suave);
     font-size: 14px;
@@ -796,7 +802,7 @@
     width:100%;
     border-collapse: collapse;
     font-size: 13.5px;
-    min-width: 1240px;
+    min-width: 1400px;
   }
 
   table.obrigacoes th{
@@ -1361,6 +1367,7 @@
       <button class="menu-item" data-view="calendario"><span class="menu-icon"></span>Calendário</button>
       <button class="menu-item" data-view="atividade"><span class="menu-icon"></span>Atividade</button>
       <button class="menu-item" data-view="aniversarios"><span class="menu-icon"></span>Aniversários</button>
+      <button class="menu-item" data-view="perfil"><span class="menu-icon"></span>Meu Perfil</button>
     </nav>
     <div class="sidebar-rodape">
       <div class="sidebar-usuario" id="sidebarUsuarioEmail">—</div>
@@ -1435,6 +1442,7 @@
                 <tr>
                   <th>Empresa</th>
                   <th class="col-obrigacao">Adiantamento<span class="obrigacao-prazo">dia 15 ou 20 (varia por empresa)</span></th>
+                  <th class="col-obrigacao">Crédito do Trabalhador<span class="obrigacao-prazo">dia 25 (a partir de ago/2026)</span></th>
                   <th class="col-obrigacao">Envio da Folha<span class="obrigacao-prazo">5º dia útil do mês seguinte</span></th>
                   <th class="col-obrigacao">e-Social<span class="obrigacao-prazo">dia 15 do mês seguinte</span></th>
                   <th class="col-obrigacao">Guia FGTS<span class="obrigacao-prazo">dia 20 do mês seguinte</span></th>
@@ -1584,6 +1592,7 @@
               <label>Obrigações contratadas</label>
               <div class="contratos-grid">
                 <label class="contrato-item"><input type="checkbox" id="campoContratoAdiantamento" checked> Adiantamento</label>
+                <label class="contrato-item"><input type="checkbox" id="campoContratoCreditoTrabalhador" checked> Crédito do Trabalhador</label>
                 <label class="contrato-item"><input type="checkbox" id="campoContratoFopag" checked> Envio da Folha</label>
                 <label class="contrato-item"><input type="checkbox" id="campoContratoEsocial" checked> e-Social</label>
                 <label class="contrato-item"><input type="checkbox" id="campoContratoFgts" checked> Guia FGTS</label>
@@ -1673,6 +1682,27 @@
         </div>
       </section>
 
+      <!-- MEU PERFIL -->
+      <section class="view" id="view-perfil">
+        <div class="card" style="max-width:420px;">
+          <h3 class="card-title">Meu perfil</h3>
+          <p class="card-sub" style="margin:0 0 16px 0;">O nome que você colocar aqui vai aparecer em vez do e-mail sempre que algo for marcado ou criado por você (nas obrigações, solicitações e no log de atividade).</p>
+          <form id="formPerfil">
+            <div class="form-group">
+              <label>E-mail</label>
+              <input type="text" id="campoPerfilEmail" disabled>
+            </div>
+            <div class="form-group">
+              <label for="campoPerfilNome">Seu nome</label>
+              <input type="text" id="campoPerfilNome" required placeholder="Ex: Mateus">
+            </div>
+            <div class="modal-acoes">
+              <button type="submit" class="btn-primario">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
       <!-- MODAL FUNCIONÁRIO -->
       <div class="modal-overlay" id="modalFuncionarioOverlay">
         <div class="modal">
@@ -1738,6 +1768,7 @@
 
   const obrigacoesConfig = [
     { chave: "adiantamento", label: "Adiantamento", tipoPrazo: "diaFixoMesAtualPorEmpresa" },
+    { chave: "creditotrabalhador", label: "Crédito do Trabalhador", tipoPrazo: "diaFixoMesAtualAdiado", dia: 25, vigenciaAno: 2026, vigenciaMes: 7 },
     { chave: "folha", label: "Envio da Folha", tipoPrazo: "nEsimoDiaUtilMesSeguinte", n: 5, sabadoUtil: true },
     { chave: "esocial", label: "e-Social", tipoPrazo: "diaFixoMesSeguinte", dia: 15 },
     { chave: "fgts", label: "Guia FGTS", tipoPrazo: "diaFixoMesSeguinte", dia: 20 },
@@ -1745,6 +1776,14 @@
     { chave: "ferias", label: "Controle de Férias", tipoPrazo: "ultimoDiaUtil" },
     { chave: "vtvrponto", label: "VT / VR / Ponto", tipoPrazo: "ultimoDiaUtil" }
   ];
+
+  // uma obrigação só existe/aparece na tabela a partir do mês de vigência definido nela (se houver)
+  function obrigacaoVigenteNoMes(o, ano, mesIndex){
+    if (o.vigenciaAno == null || o.vigenciaMes == null) return true;
+    if (ano > o.vigenciaAno) return true;
+    if (ano === o.vigenciaAno && mesIndex >= o.vigenciaMes) return true;
+    return false;
+  }
 
   function chaveMes(){
     return currentViewDate.year + "-" + currentViewDate.month;
@@ -1829,7 +1868,7 @@
       <div class="atividade-item">
         <div>
           <div class="atividade-desc">${escapeHtml(a.descricao)}</div>
-          <div class="atividade-meta">${formatarDataHoraCompleta(a.criadoEm)} · ${escapeHtml(nomeCurto(a.usuario) || "sistema")}</div>
+          <div class="atividade-meta">${formatarDataHoraCompleta(a.criadoEm)} · ${escapeHtml(nomeExibicao(a.usuario) || "sistema")}</div>
         </div>
         <span class="atividade-tag">${labelsTipoAtividade[a.tipo] || a.tipo}</span>
       </div>
@@ -2016,6 +2055,31 @@
     await recarregarAniversariosNaTela();
   }
 
+  const formPerfil = document.getElementById("formPerfil");
+  formPerfil.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById("campoPerfilNome").value.trim();
+    if (!nome) return;
+
+    const { error } = await supabaseClient.from("perfis_usuario").upsert({
+      email: usuarioAtual.email,
+      nome: nome,
+      atualizado_em: new Date().toISOString()
+    }, { onConflict: "email" });
+
+    if (error){
+      console.error(error);
+      mostrarErroGeral("Não foi possível salvar seu nome agora.");
+      return;
+    }
+
+    perfis[usuarioAtual.email] = nome;
+    document.getElementById("sidebarUsuarioEmail").textContent = nomeExibicao(usuarioAtual.email);
+    renderizarObrigacoes();
+    renderizarSolicitacoes();
+    renderizarAtividade();
+  });
+
   // ---------- MÊS ATUAL / NAVEGAÇÃO ----------
   const meses = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
   const hoje = new Date();
@@ -2114,6 +2178,15 @@
     return data;
   }
 
+  // dia fixo dentro do PRÓPRIO mês, mas adiando (não antecipando) se cair em fim de semana/feriado
+  function diaFixoMesAtualAdiado(ano, mesIndex, dia){
+    let data = new Date(ano, mesIndex, dia);
+    while (!ehDiaUtil(data, false)){
+      data = somarDias(data, 1);
+    }
+    return data;
+  }
+
   function nEsimoDiaUtilMesSeguinte(ano, mesIndex, n, sabadoUtil){
     const seguinte = mesSeguinte(ano, mesIndex);
     let data = new Date(seguinte.ano, seguinte.mesIndex, 1);
@@ -2141,6 +2214,9 @@
       const dia = (emp && emp.diaAdiantamento) || 20;
       return diaFixoMesAtualAntecipado(currentViewDate.year, currentViewDate.month, dia);
     }
+    if (config.tipoPrazo === "diaFixoMesAtualAdiado"){
+      return diaFixoMesAtualAdiado(currentViewDate.year, currentViewDate.month, config.dia);
+    }
     return new Date(currentViewDate.year, currentViewDate.month, config.dia);
   }
 
@@ -2157,6 +2233,9 @@
     }
     if (config.tipoPrazo === "diaFixoMesAtualPorEmpresa"){
       return diaFixoMesAtualAntecipado(ano, mes, dia || 20);
+    }
+    if (config.tipoPrazo === "diaFixoMesAtualAdiado"){
+      return diaFixoMesAtualAdiado(ano, mes, config.dia);
     }
     return new Date(ano, mes, config.dia);
   }
@@ -2216,6 +2295,7 @@
         return;
       }
       const dataVenc = dataVencimentoObrigacaoPara(o, currentViewDate.year, currentViewDate.month);
+      if (!obrigacaoVigenteNoMes(o, dataVenc.getFullYear(), dataVenc.getMonth())) return;
       const alvo = (dataVenc.getMonth() === currentViewDate.month && dataVenc.getFullYear() === currentViewDate.year)
         ? eventosMesAtual
         : eventosMesSeguinte;
@@ -2256,6 +2336,24 @@
   function nomeCurto(email){
     if (!email) return "";
     return email.split("@")[0];
+  }
+
+  // ---------- PERFIS (nome de exibição por usuário) ----------
+  let perfis = {};
+
+  async function carregarPerfis(){
+    const { data, error } = await supabaseClient.from("perfis_usuario").select("*");
+    if (error){
+      console.error(error);
+      return;
+    }
+    perfis = {};
+    (data || []).forEach(row => { perfis[row.email] = row.nome; });
+  }
+
+  function nomeExibicao(email){
+    if (!email) return "";
+    return perfis[email] || nomeCurto(email);
   }
 
   function calcularStatus(chave, feito, emp){
@@ -2303,6 +2401,7 @@
       ativa: row.ativa !== false,
       contratos: {
         adiantamento: row.contrata_adiantamento !== false,
+        creditotrabalhador: row.contrata_creditotrabalhador !== false,
         folha: row.contrata_fopag !== false,
         fgts: row.contrata_fgts !== false,
         esocial: row.contrata_esocial !== false,
@@ -2424,7 +2523,8 @@
     emails: "E-mails",
     calendario: "Calendário",
     atividade: "Atividade",
-    aniversarios: "Aniversários"
+    aniversarios: "Aniversários",
+    perfil: "Meu Perfil"
   };
 
   menuItems.forEach(item => {
@@ -2518,9 +2618,10 @@
   function empresaBateFiltroObrigacao(emp, estadoEmpresa){
     if (filtroObrigacaoStatus === "todas") return true;
 
+    const vigentes = obrigacoesConfig.filter(o => obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month));
     const relevantes = filtroObrigacaoTipo === "todas"
-      ? obrigacoesConfig.filter(o => emp.contratos[o.chave])
-      : obrigacoesConfig.filter(o => o.chave === filtroObrigacaoTipo && emp.contratos[o.chave]);
+      ? vigentes.filter(o => emp.contratos[o.chave])
+      : vigentes.filter(o => o.chave === filtroObrigacaoTipo && emp.contratos[o.chave]);
 
     if (relevantes.length === 0) return false;
 
@@ -2543,7 +2644,8 @@
     const estado = obterEstadoMes()[empresaId];
     if (!estado) return 0;
     const emp = empresas.find(e => e.id === empresaId);
-    const contratadas = emp ? obrigacoesConfig.filter(o => emp.contratos[o.chave]) : obrigacoesConfig;
+    const vigentes = obrigacoesConfig.filter(o => obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month));
+    const contratadas = emp ? vigentes.filter(o => emp.contratos[o.chave]) : vigentes;
     if (contratadas.length === 0) return 0;
     const feitas = contratadas.filter(o => estado[o.chave] && estado[o.chave].concluido).length;
     return Math.round((feitas / contratadas.length) * 100);
@@ -2579,7 +2681,7 @@
 
     const quemEl = document.getElementById(`quem-${empresaId}-${chave}`);
     if (quemEl){
-      quemEl.textContent = novoValor ? `por ${nomeCurto(usuarioAtual.email)}` : "";
+      quemEl.textContent = novoValor ? `por ${nomeExibicao(usuarioAtual.email)}` : "";
     }
 
     atualizarProgresso(empresaId);
@@ -2706,6 +2808,16 @@
 
       let checksHtml = "";
       obrigacoesConfig.forEach(o => {
+        if (!obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month)){
+          checksHtml += `
+            <td class="check-cell">
+              <div class="check-cell-inner">
+                <span class="nao-contratado" title="Obrigação ainda não estava em vigor neste mês">—</span>
+              </div>
+            </td>
+          `;
+          return;
+        }
         if (!emp.contratos[o.chave]){
           checksHtml += `
             <td class="check-cell">
@@ -2719,7 +2831,7 @@
         const entrada = estadoEmpresa[o.chave] || { concluido: false, atualizadoPor: null, nota: null };
         const feito = entrada.concluido;
         const status = calcularStatus(o.chave, feito, emp);
-        const quemTexto = feito && entrada.atualizadoPor ? `por ${nomeCurto(entrada.atualizadoPor)}` : "";
+        const quemTexto = feito && entrada.atualizadoPor ? `por ${nomeExibicao(entrada.atualizadoPor)}` : "";
         const temNota = entrada.nota && entrada.nota.trim().length > 0;
         checksHtml += `
           <td class="check-cell">
@@ -2767,6 +2879,10 @@
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       const linha = [emp.codigo, emp.razaoSocial, emp.cnpj];
       obrigacoesConfig.forEach(o => {
+        if (!obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month)){
+          linha.push("Ainda não vigente");
+          return;
+        }
         if (!emp.contratos[o.chave]){
           linha.push("Não contratado");
           return;
@@ -2835,6 +2951,7 @@
     empresas.filter(emp => emp.ativa).forEach(emp => {
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       obrigacoesConfig.forEach(o => {
+        if (!obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month)) return;
         if (!emp.contratos[o.chave]) return;
         total++;
         const feito = estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido;
@@ -2964,6 +3081,7 @@
     empresas.filter(emp => emp.ativa).forEach(emp => {
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       obrigacoesConfig.forEach(o => {
+        if (!obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month)) return;
         if (!emp.contratos[o.chave]) return;
         const feito = estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido;
         const diff = diffDiasParaHoje(dataVencimentoObrigacao(o, emp));
@@ -3007,6 +3125,7 @@
 
     const vencimentos = [];
     obrigacoesConfig.forEach(o => {
+      if (!obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month)) return;
       if (o.chave === "adiantamento"){
         const gruposPorDia = {};
         empresas.filter(emp => emp.ativa).forEach(emp => {
@@ -3170,6 +3289,7 @@
       campoEmpresaCnpj.value = emp.cnpj === "—" ? "" : emp.cnpj;
       campoEmpresaCodigoSistema.value = emp.codigo;
       document.getElementById("campoContratoAdiantamento").checked = emp.contratos.adiantamento;
+      document.getElementById("campoContratoCreditoTrabalhador").checked = emp.contratos.creditotrabalhador;
       document.getElementById("campoContratoFopag").checked = emp.contratos.folha;
       document.getElementById("campoContratoEsocial").checked = emp.contratos.esocial;
       document.getElementById("campoContratoFgts").checked = emp.contratos.fgts;
@@ -3228,6 +3348,7 @@
 
     const contratosPayload = {
       contrata_adiantamento: document.getElementById("campoContratoAdiantamento").checked,
+      contrata_creditotrabalhador: document.getElementById("campoContratoCreditoTrabalhador").checked,
       contrata_fopag: document.getElementById("campoContratoFopag").checked,
       contrata_esocial: document.getElementById("campoContratoEsocial").checked,
       contrata_fgts: document.getElementById("campoContratoFgts").checked,
@@ -3573,8 +3694,8 @@
         const emp = empresas.find(e => e.id === s.empresaId);
         const statusPrazo = calcularStatusPrazo(s.prazo, s.status);
         const metaPartes = [];
-        if (s.criadoPor) metaPartes.push(`Criado por ${nomeCurto(s.criadoPor)}`);
-        if (s.status === "concluida" && s.concluidoPor) metaPartes.push(`Concluído por ${nomeCurto(s.concluidoPor)}`);
+        if (s.criadoPor) metaPartes.push(`Criado por ${nomeExibicao(s.criadoPor)}`);
+        if (s.status === "concluida" && s.concluidoPor) metaPartes.push(`Concluído por ${nomeExibicao(s.concluidoPor)}`);
         return `
           <tr>
             <td>
@@ -3716,7 +3837,17 @@
       })
       .subscribe();
 
-    canaisRealtime = [canalEmpresas, canalObrigacoes, canalSolicitacoes, canalAtividade, canalFuncionarios];
+    const canalPerfis = supabaseClient.channel("mudancas-perfis")
+      .on("postgres_changes", { event: "*", schema: "public", table: "perfis_usuario" }, async () => {
+        await carregarPerfis();
+        if (usuarioAtual) document.getElementById("sidebarUsuarioEmail").textContent = nomeExibicao(usuarioAtual.email);
+        renderizarObrigacoes();
+        renderizarSolicitacoes();
+        renderizarAtividade();
+      })
+      .subscribe();
+
+    canaisRealtime = [canalEmpresas, canalObrigacoes, canalSolicitacoes, canalAtividade, canalFuncionarios, canalPerfis];
   }
 
   // ---------- AUTENTICAÇÃO ----------
@@ -3729,7 +3860,11 @@
   async function entrarNoApp(){
     loginOverlay.style.display = "none";
     appPrincipal.style.display = "flex";
-    document.getElementById("sidebarUsuarioEmail").textContent = usuarioAtual.email;
+
+    await carregarPerfis();
+    document.getElementById("sidebarUsuarioEmail").textContent = nomeExibicao(usuarioAtual.email);
+    document.getElementById("campoPerfilEmail").value = usuarioAtual.email;
+    document.getElementById("campoPerfilNome").value = perfis[usuarioAtual.email] || "";
 
     await carregarEmpresas();
     await carregarSolicitacoes();
