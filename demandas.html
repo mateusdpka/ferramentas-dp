@@ -891,6 +891,21 @@
     margin-top: 1px;
   }
 
+  .nota-btn{
+    margin-top: 4px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--texto-suave);
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .nota-btn:hover{ background: var(--fundo); }
+  .nota-btn.tem-nota{
+    font-size: 13px;
+  }
+
   .status-vermelho{
     color: #b3261e;
     background: rgba(179,38,30,0.1);
@@ -1631,6 +1646,26 @@
         </div>
       </div>
 
+      <!-- MODAL NOTA DA OBRIGAÇÃO -->
+      <div class="modal-overlay" id="modalNotaOverlay">
+        <div class="modal">
+          <div class="modal-header">
+            <h3 id="modalNotaTitulo">Observação</h3>
+            <button class="modal-fechar" id="modalNotaFechar">&times;</button>
+          </div>
+          <form id="formNota">
+            <div class="form-group">
+              <label for="campoNotaTexto">Anotação</label>
+              <textarea id="campoNotaTexto" rows="4" placeholder="Ex: cliente pediu prazo até dia 25 por causa de férias coletivas..."></textarea>
+            </div>
+            <div class="modal-acoes">
+              <button type="button" class="btn-secundario" id="btnRemoverNota">Remover observação</button>
+              <button type="submit" class="btn-primario">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1888,6 +1923,7 @@
     await carregarFuncionarios();
     renderizarAniversarios();
     renderizarAniversariosPainel();
+    renderizarCalendario();
   }
 
   formFuncionario.addEventListener("submit", async (e) => {
@@ -2137,6 +2173,17 @@
       alvo[dia].push(o.label);
     });
 
+    funcionarios.forEach(f => {
+      const [, mesNasc, diaNasc] = f.dataNascimento.split("-").map(Number);
+      const mesNascIndex = mesNasc - 1;
+      let alvo = null;
+      if (mesNascIndex === currentViewDate.month) alvo = eventosMesAtual;
+      else if (mesNascIndex === seguinte.mesIndex) alvo = eventosMesSeguinte;
+      if (!alvo) return;
+      if (!alvo[diaNasc]) alvo[diaNasc] = [];
+      alvo[diaNasc].push(`🎂 ${f.nome}`);
+    });
+
     container.innerHTML =
       construirGradeMes(currentViewDate.year, currentViewDate.month, eventosMesAtual) +
       construirGradeMes(seguinte.ano, seguinte.mesIndex, eventosMesSeguinte);
@@ -2253,7 +2300,7 @@
   function estadoVazioParaEmpresa(){
     const obj = {};
     obrigacoesConfig.forEach(o => {
-      obj[o.chave] = { concluido: false, atualizadoPor: null, atualizadoEm: null };
+      obj[o.chave] = { concluido: false, atualizadoPor: null, atualizadoEm: null, nota: null };
     });
     return obj;
   }
@@ -2273,7 +2320,8 @@
         mapa[row.empresa_id][row.chave] = {
           concluido: row.concluido,
           atualizadoPor: row.atualizado_por,
-          atualizadoEm: row.atualizado_em
+          atualizadoEm: row.atualizado_em,
+          nota: row.nota || null
         };
       });
     }
@@ -2419,7 +2467,7 @@
     const agora = new Date().toISOString();
 
     // atualização otimista
-    mapa[empresaId][chave] = { concluido: novoValor, atualizadoPor: usuarioAtual.email, atualizadoEm: agora };
+    mapa[empresaId][chave] = { concluido: novoValor, atualizadoPor: usuarioAtual.email, atualizadoEm: agora, nota: anterior.nota || null };
     btn.classList.toggle("done", novoValor);
     btn.textContent = novoValor ? "✓" : "";
 
@@ -2460,6 +2508,80 @@
     }
   }
 
+  // ---------- NOTAS / OBSERVAÇÕES NAS OBRIGAÇÕES ----------
+  let notaEmEdicao = { empresaId: null, chave: null };
+
+  const modalNotaOverlay = document.getElementById("modalNotaOverlay");
+  const formNota = document.getElementById("formNota");
+  const campoNotaTexto = document.getElementById("campoNotaTexto");
+
+  function abrirModalNota(empresaId, chave){
+    const estadoMes = obterEstadoMes();
+    const entrada = (estadoMes[empresaId] || {})[chave] || {};
+    const emp = empresas.find(e => e.id === empresaId);
+    const label = (obrigacoesConfig.find(o => o.chave === chave) || {}).label || chave;
+
+    notaEmEdicao = { empresaId, chave };
+    document.getElementById("modalNotaTitulo").textContent = `${label} — ${emp ? emp.razaoSocial : ""}`;
+    campoNotaTexto.value = entrada.nota || "";
+    modalNotaOverlay.classList.add("active");
+    campoNotaTexto.focus();
+  }
+
+  function fecharModalNota(){
+    modalNotaOverlay.classList.remove("active");
+    notaEmEdicao = { empresaId: null, chave: null };
+  }
+
+  document.getElementById("modalNotaFechar").addEventListener("click", fecharModalNota);
+  modalNotaOverlay.addEventListener("click", (e) => {
+    if (e.target === modalNotaOverlay) fecharModalNota();
+  });
+
+  async function salvarNotaObrigacao(textoNota){
+    const { empresaId, chave } = notaEmEdicao;
+    if (!empresaId || !chave) return;
+    const mesAno = chaveMes();
+    const mapa = obterEstadoMes();
+    if (!mapa[empresaId]) mapa[empresaId] = estadoVazioParaEmpresa();
+    const entradaAtual = mapa[empresaId][chave] || { concluido: false, atualizadoPor: null, atualizadoEm: null, nota: null };
+
+    const { error } = await supabaseClient.from("obrigacoes_estado").upsert({
+      empresa_id: empresaId,
+      mes_ano: mesAno,
+      chave: chave,
+      concluido: entradaAtual.concluido,
+      atualizado_por: entradaAtual.atualizadoPor,
+      atualizado_em: entradaAtual.atualizadoEm || new Date().toISOString(),
+      nota: textoNota || null
+    }, { onConflict: "empresa_id,mes_ano,chave" });
+
+    if (error){
+      console.error(error);
+      mostrarErroGeral("Não foi possível salvar a observação agora.");
+      return;
+    }
+
+    mapa[empresaId][chave] = { ...entradaAtual, nota: textoNota || null };
+    renderizarObrigacoes();
+
+    const emp = empresas.find(e => e.id === empresaId);
+    const label = (obrigacoesConfig.find(o => o.chave === chave) || {}).label || chave;
+    registrarAtividade("obrigacao", `Observação em "${label}" de ${emp ? emp.razaoSocial : empresaId} ${textoNota ? "atualizada" : "removida"}`);
+  }
+
+  formNota.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await salvarNotaObrigacao(campoNotaTexto.value.trim());
+    fecharModalNota();
+  });
+
+  document.getElementById("btnRemoverNota").addEventListener("click", async () => {
+    campoNotaTexto.value = "";
+    await salvarNotaObrigacao("");
+    fecharModalNota();
+  });
+
   function renderizarObrigacoes(){
     const estadoMes = obterEstadoMes();
     tbody.innerHTML = "";
@@ -2489,10 +2611,11 @@
           `;
           return;
         }
-        const entrada = estadoEmpresa[o.chave] || { concluido: false, atualizadoPor: null };
+        const entrada = estadoEmpresa[o.chave] || { concluido: false, atualizadoPor: null, nota: null };
         const feito = entrada.concluido;
         const status = calcularStatus(o.chave, feito, emp);
         const quemTexto = feito && entrada.atualizadoPor ? `por ${nomeCurto(entrada.atualizadoPor)}` : "";
+        const temNota = entrada.nota && entrada.nota.trim().length > 0;
         checksHtml += `
           <td class="check-cell">
             <div class="check-cell-inner">
@@ -2500,6 +2623,7 @@
               <div class="check-data">${diaFormatado(dataVencimentoObrigacao(o, emp))}</div>
               <div class="check-status ${status.classe}" id="status-${emp.id}-${o.chave}">${status.texto}</div>
               <div class="check-quem" id="quem-${emp.id}-${o.chave}">${quemTexto}</div>
+              <button class="nota-btn ${temNota ? "tem-nota" : ""}" id="nota-btn-${emp.id}-${o.chave}" onclick="abrirModalNota('${emp.id}','${o.chave}')" title="${temNota ? "Ver/editar observação" : "Adicionar observação"}">${temNota ? "📝" : "+ nota"}</button>
             </div>
           </td>
         `;
@@ -3418,12 +3542,13 @@
         if (!cacheObrigacoes[mesAno][linha.empresa_id]) cacheObrigacoes[mesAno][linha.empresa_id] = estadoVazioParaEmpresa();
 
         if (payload.eventType === "DELETE"){
-          cacheObrigacoes[mesAno][linha.empresa_id][linha.chave] = { concluido: false, atualizadoPor: null, atualizadoEm: null };
+          cacheObrigacoes[mesAno][linha.empresa_id][linha.chave] = { concluido: false, atualizadoPor: null, atualizadoEm: null, nota: null };
         } else {
           cacheObrigacoes[mesAno][linha.empresa_id][linha.chave] = {
             concluido: payload.new.concluido,
             atualizadoPor: payload.new.atualizado_por,
-            atualizadoEm: payload.new.atualizado_em
+            atualizadoEm: payload.new.atualizado_em,
+            nota: payload.new.nota || null
           };
         }
 
@@ -3454,6 +3579,7 @@
         await carregarFuncionarios();
         renderizarAniversarios();
         renderizarAniversariosPainel();
+        renderizarCalendario();
       })
       .subscribe();
 
