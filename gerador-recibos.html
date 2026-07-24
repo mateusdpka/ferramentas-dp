@@ -302,6 +302,24 @@
             <input type="number" id="pontoAno" value="2026">
           </div>
         </div>
+        <div class="grid-3" style="grid-template-columns: repeat(4,1fr);">
+          <div class="form-group">
+            <label for="pontoHoraEntrada">Entrada (seg. a sext.)</label>
+            <input type="text" id="pontoHoraEntrada" value="08:00">
+          </div>
+          <div class="form-group">
+            <label for="pontoHoraIntervaloInicio">Início do intervalo</label>
+            <input type="text" id="pontoHoraIntervaloInicio" value="12:00">
+          </div>
+          <div class="form-group">
+            <label for="pontoHoraIntervaloFim">Fim do intervalo</label>
+            <input type="text" id="pontoHoraIntervaloFim" value="13:00">
+          </div>
+          <div class="form-group">
+            <label for="pontoHoraSaida">Saída</label>
+            <input type="text" id="pontoHoraSaida" value="17:00">
+          </div>
+        </div>
 
         <table class="tabela-func" id="tabelaPonto">
           <thead>
@@ -593,12 +611,9 @@
     const totalDias = diasNoMes(dados.ano, dados.mesIndex);
     let linhasTabela = "";
     for (let dia = 1; dia <= totalDias; dia++) {
-      const diaSemana = new Date(dados.ano, dados.mesIndex, dia).getDay();
-      const ehFds = diaSemana === 0 || diaSemana === 6;
-      const siglaDia = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][diaSemana];
       linhasTabela += `
-        <tr class="${ehFds ? "fds" : ""}">
-          <td class="dia">${String(dia).padStart(2, "0")} ${siglaDia}</td>
+        <tr>
+          <td class="dia">${String(dia).padStart(2, "0")}</td>
           <td></td><td></td><td></td><td></td><td></td>
           <td class="assinatura-col"><span class="mini-linha"></span></td>
         </tr>
@@ -629,10 +644,10 @@
           <thead>
             <tr>
               <th>Dia</th>
-              <th>Entrada<br>Seg. a Sext.</th>
-              <th>Início<br>Intervalo</th>
-              <th>Fim<br>Intervalo</th>
-              <th>Saída</th>
+              <th>Entrada<br>Seg. a Sext. ${escapeHtml(dados.horaEntrada)}</th>
+              <th>Início do<br>Intervalo ${escapeHtml(dados.horaIntervaloInicio)}</th>
+              <th>Fim do<br>Intervalo ${escapeHtml(dados.horaIntervaloFim)}</th>
+              <th>Saída<br>${escapeHtml(dados.horaSaida)}</th>
               <th>Hora<br>Extra</th>
               <th>Assinatura do<br>Empregado(a)</th>
             </tr>
@@ -649,6 +664,10 @@
     const empregadoraCpf = document.getElementById("pontoEmpregadoraCpf").value.trim();
     const mesIndex = Number(document.getElementById("pontoMes").value);
     const ano = Number(document.getElementById("pontoAno").value);
+    const horaEntrada = document.getElementById("pontoHoraEntrada").value.trim() || "08:00";
+    const horaIntervaloInicio = document.getElementById("pontoHoraIntervaloInicio").value.trim() || "12:00";
+    const horaIntervaloFim = document.getElementById("pontoHoraIntervaloFim").value.trim() || "13:00";
+    const horaSaida = document.getElementById("pontoHoraSaida").value.trim() || "17:00";
 
     const linhas = [...document.querySelectorAll("#tabelaPontoBody tr")];
     const paginas = linhas.map(tr => {
@@ -656,7 +675,7 @@
       const cpf = tr.querySelector(".ponto-cpf").value.trim();
       const cargo = tr.querySelector(".ponto-cargo").value.trim() || "EMPREGADA - DOMÉSTICA";
       if (!nome) return "";
-      return gerarHtmlPonto({ empregadoraNome, empregadoraCpf, mesIndex, ano, nome, cpf, cargo });
+      return gerarHtmlPonto({ empregadoraNome, empregadoraCpf, mesIndex, ano, nome, cpf, cargo, horaEntrada, horaIntervaloInicio, horaIntervaloFim, horaSaida });
     }).filter(Boolean);
 
     if (paginas.length === 0) {
