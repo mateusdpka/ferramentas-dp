@@ -755,6 +755,28 @@
     margin-right: 6px;
   }
 
+  .tag-pf{
+    display:inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #3a6b8a;
+    background: rgba(58,107,138,0.12);
+    padding: 1px 7px;
+    border-radius: 999px;
+    vertical-align: middle;
+  }
+
+  .tag-pro-labore{
+    display:inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #6b4fa0;
+    background: rgba(107,79,160,0.12);
+    padding: 1px 7px;
+    border-radius: 999px;
+    vertical-align: middle;
+  }
+
   .empresa-nome{
     font-size: 14px;
     font-weight: 600;
@@ -1435,6 +1457,12 @@
               <button class="filtro-btn" data-filtro-status="atrasadas">Atrasadas</button>
               <button class="filtro-btn" data-filtro-status="concluidas">Concluídas</button>
             </div>
+            <div class="filtros-status" id="filtrosTipoCliente">
+              <button class="filtro-btn active" data-filtro-tipo-cliente="todos">Todos os clientes</button>
+              <button class="filtro-btn" data-filtro-tipo-cliente="pj">Empresas (PJ)</button>
+              <button class="filtro-btn" data-filtro-tipo-cliente="pf_domestica">Domésticas (PF)</button>
+              <button class="filtro-btn" data-filtro-tipo-cliente="pro_labore">Pró-labore</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table class="obrigacoes">
@@ -1587,6 +1615,14 @@
               <label for="campoEmpresaCodigoSistema">Código do sistema</label>
               <input type="text" id="campoEmpresaCodigoSistema" required placeholder="Ex: 245">
               <div class="form-hint" id="hintCodigoEmpresa"></div>
+            </div>
+            <div class="form-group">
+              <label for="campoTipoCliente">Tipo de cliente</label>
+              <select id="campoTipoCliente">
+                <option value="pj" selected>Empresa (PJ)</option>
+                <option value="pf_domestica">Pessoa física — empregador doméstico</option>
+                <option value="pro_labore">Pró-labore</option>
+              </select>
             </div>
             <div class="form-group">
               <label>Obrigações contratadas</label>
@@ -2356,6 +2392,12 @@
     return perfis[email] || nomeCurto(email);
   }
 
+  function tagTipoCliente(emp){
+    if (emp.tipoCliente === "pf_domestica") return ' <span class="tag-pf">PF</span>';
+    if (emp.tipoCliente === "pro_labore") return ' <span class="tag-pro-labore">PRÓ-LAB</span>';
+    return "";
+  }
+
   function calcularStatus(chave, feito, emp){
     const config = obrigacoesConfig.find(o => o.chave === chave);
     const dataVencimento = dataVencimentoObrigacao(config, emp);
@@ -2399,6 +2441,7 @@
       id: row.id, codigo: row.codigo, razaoSocial: row.razao_social, cnpj: row.cnpj || "—", email: row.email || "",
       diaAdiantamento: row.dia_adiantamento || 20,
       ativa: row.ativa !== false,
+      tipoCliente: row.tipo_cliente || "pj",
       contratos: {
         adiantamento: row.contrata_adiantamento !== false,
         creditotrabalhador: row.contrata_creditotrabalhador !== false,
@@ -2614,6 +2657,16 @@
     });
   });
 
+  let filtroTipoCliente = "todos";
+  document.querySelectorAll("#filtrosTipoCliente .filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filtrosTipoCliente .filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroTipoCliente = btn.dataset.filtroTipoCliente;
+      renderizarObrigacoes();
+    });
+  });
+
   // decide se a empresa deve aparecer na tabela, de acordo com os filtros de obrigação/status escolhidos
   function empresaBateFiltroObrigacao(emp, estadoEmpresa){
     if (filtroObrigacaoStatus === "todas") return true;
@@ -2793,6 +2846,7 @@
     const empresasFiltradas = empresas.filter(emp =>
       emp.ativa &&
       empresaCombinaComBusca(emp, textoBusca) &&
+      (filtroTipoCliente === "todos" || emp.tipoCliente === filtroTipoCliente) &&
       empresaBateFiltroObrigacao(emp, estadoMesFiltro[emp.id] || estadoVazioParaEmpresa())
     );
 
@@ -2848,7 +2902,7 @@
 
       tr.innerHTML = `
         <td class="empresa-cell">
-          <div class="nome">${emp.razaoSocial}</div>
+          <div class="nome">${emp.razaoSocial}${tagTipoCliente(emp)}</div>
           <div class="cod">${emp.codigo}</div>
         </td>
         ${checksHtml}
@@ -3230,7 +3284,7 @@
         div.innerHTML = `
           <span class="empresa-codigo">${emp.codigo}</span>
           ${!emp.ativa ? '<span class="badge-desabilitada">Desabilitada</span>' : ""}
-          <div class="empresa-nome">${emp.razaoSocial}</div>
+          <div class="empresa-nome">${emp.razaoSocial}${tagTipoCliente(emp)}</div>
           <div class="empresa-cnpj">CNPJ: ${emp.cnpj}</div>
           <div class="empresa-card-acoes">
             <button class="acao-btn" onclick="abrirModalEmpresa('${emp.id}')">Editar</button>
@@ -3288,6 +3342,7 @@
       campoEmpresaNome.value = emp.razaoSocial;
       campoEmpresaCnpj.value = emp.cnpj === "—" ? "" : emp.cnpj;
       campoEmpresaCodigoSistema.value = emp.codigo;
+      document.getElementById("campoTipoCliente").value = emp.tipoCliente || "pj";
       document.getElementById("campoContratoAdiantamento").checked = emp.contratos.adiantamento;
       document.getElementById("campoContratoCreditoTrabalhador").checked = emp.contratos.creditotrabalhador;
       document.getElementById("campoContratoFopag").checked = emp.contratos.folha;
@@ -3355,7 +3410,8 @@
       contrata_dctfweb: document.getElementById("campoContratoDctfweb").checked,
       contrata_ferias: document.getElementById("campoContratoFerias").checked,
       contrata_vtvrponto: document.getElementById("campoContratoVtvrponto").checked,
-      dia_adiantamento: Number(document.getElementById("campoDiaAdiantamento").value)
+      dia_adiantamento: Number(document.getElementById("campoDiaAdiantamento").value),
+      tipo_cliente: document.getElementById("campoTipoCliente").value
     };
 
     const btnSalvar = formEmpresa.querySelector("button[type=submit]");
