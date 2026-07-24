@@ -1588,6 +1588,12 @@
             <button class="filtro-btn" data-filtro-empresa="desabilitadas">Desabilitadas</button>
             <button class="filtro-btn" data-filtro-empresa="todas">Todas</button>
           </div>
+          <div class="filtros-status" id="filtrosTipoClienteEmpresa">
+            <button class="filtro-btn active" data-filtro-tipo-cliente-empresa="todos">Todos os clientes</button>
+            <button class="filtro-btn" data-filtro-tipo-cliente-empresa="pj">Empresas (PJ)</button>
+            <button class="filtro-btn" data-filtro-tipo-cliente-empresa="pf_domestica">Domésticas (PF)</button>
+            <button class="filtro-btn" data-filtro-tipo-cliente-empresa="pro_labore">Pró-labore</button>
+          </div>
           <div class="empresas-grid" id="empresasGrid">
             <!-- gerado via JS -->
           </div>
@@ -3254,6 +3260,7 @@
   const empresasVazio = document.getElementById("empresasVazio");
   const buscaEmpresas = document.getElementById("buscaEmpresas");
   let filtroEmpresaStatus = "ativas";
+  let filtroTipoClienteEmpresa = "todos";
 
   document.querySelectorAll("#filtrosStatusEmpresa .filtro-btn").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -3264,10 +3271,20 @@
     });
   });
 
+  document.querySelectorAll("#filtrosTipoClienteEmpresa .filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filtrosTipoClienteEmpresa .filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroTipoClienteEmpresa = btn.dataset.filtroTipoClienteEmpresa;
+      renderizarEmpresas();
+    });
+  });
+
   function renderizarEmpresas(){
     const textoBusca = buscaEmpresas.value.trim();
     const filtradas = empresas.filter(emp => {
       if (!empresaCombinaComBusca(emp, textoBusca)) return false;
+      if (filtroTipoClienteEmpresa !== "todos" && emp.tipoCliente !== filtroTipoClienteEmpresa) return false;
       if (filtroEmpresaStatus === "ativas") return emp.ativa;
       if (filtroEmpresaStatus === "desabilitadas") return !emp.ativa;
       return true;
