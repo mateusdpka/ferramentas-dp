@@ -174,6 +174,52 @@
 
   .rec-rodape-doc{ margin-top:30px; padding-top:8px; border-top:1px solid #ccc; font-size:9.5px; color:#888; text-align:center; }
 
+  /* ---------- NOVO LAYOUT DE RECIBO (estilo "recibo de pagamento") ---------- */
+  :root{ --recibo-navy: #1e3a5c; --recibo-navy-claro: rgba(30,58,92,0.06); }
+
+  .pagina-recibo.recibo-novo{ padding:0; font-size:12.5px; line-height:1.5; }
+
+  .doc-header-bar{
+    background: var(--recibo-navy); color:#fff; text-align:center;
+    padding:14px 10px; font-size:17px; font-weight:800; letter-spacing:0.02em; text-transform:uppercase;
+  }
+  .doc-corpo{ padding: 22px 26px 4px; }
+
+  .doc-secao-label{
+    font-size:12.5px; font-weight:700; color:#222; margin: 18px 0 8px;
+    padding-bottom:6px; border-bottom:1px solid #ddd;
+  }
+  .doc-secao-label:first-child{ margin-top:0; }
+
+  .doc-linha-info{ display:grid; grid-template-columns: 140px 1fr; padding:8px 4px; font-size:12.5px; border-bottom:1px solid #eee; }
+  .doc-linha-info .rotulo{ font-weight:700; color:#333; }
+  .doc-linha-info .valor{ color:#111; }
+
+  .doc-total-bar{ display:flex; margin:20px 0 18px; border-radius:3px; overflow:hidden; }
+  .doc-total-rotulo{
+    background: var(--recibo-navy); color:#fff; font-weight:800; font-size:13.5px;
+    display:flex; align-items:center; padding: 0 18px; width:45%; text-transform:uppercase; letter-spacing:0.02em;
+  }
+  .doc-total-valor{
+    background:#eef0f2; flex:1; display:flex; align-items:baseline; gap:8px; justify-content:center;
+    font-size:19px; font-weight:800; color:#111;
+  }
+  .doc-total-valor .extenso{ font-size:10.5px; font-weight:400; color:#555; }
+
+  .doc-texto-italico{ font-style:italic; font-size:11.5px; color:#333; margin: 16px 0; text-align:left; line-height:1.6; }
+
+  .doc-assinatura-linha{ margin-top: 46px; font-size:12px; }
+  .doc-assinatura-linha .campo-data{ margin-bottom: 34px; }
+  .doc-assinatura-linha .linha-assinatura{ border-top:1px solid #000; width:300px; float:right; text-align:center; padding-top:5px; }
+  .doc-assinatura-linha .linha-assinatura b{ display:block; font-size:12.5px; }
+  .doc-assinatura-linha .linha-assinatura span{ font-size:10.5px; color:#555; }
+  .doc-assinatura-clear{ clear:both; }
+
+  .doc-footer-bar{
+    background: var(--recibo-navy); color:#fff; text-align:center; font-size:9.5px; font-style:italic;
+    padding:7px 10px; margin-top:26px;
+  }
+
   /* ---------- FOLHA DE PONTO (uma página só) ---------- */
   .pagina-recibo.ponto{ padding: 0; font-size: 11px; height: 277mm; }
 
@@ -196,7 +242,10 @@
   table.folha-ponto th{ background:#e9e7e2; font-size:8.3px; font-weight:700; padding:3px 2px; line-height:1.15; }
   table.folha-ponto td{ padding:0; }
   table.folha-ponto td.dia{ font-weight:700; width:9%; background:#f7f6f4; }
-  table.folha-ponto td.assinatura-col{ width:22%; }
+  table.folha-ponto td.assinatura-col{ width:22%; position:relative; }
+  table.folha-ponto td.assinatura-col .mini-linha{
+    display:block; position:absolute; left:6%; right:6%; bottom:1.2mm; border-bottom:1px solid #999;
+  }
   table.folha-ponto tr.fds td.dia{ color:#999; font-weight:600; }
   table.folha-ponto tr.fds td{ background:#f2f2f0; }
   table.folha-ponto col.col-dia{ width:9%; }
@@ -551,7 +600,7 @@
         <tr class="${ehFds ? "fds" : ""}">
           <td class="dia">${String(dia).padStart(2, "0")} ${siglaDia}</td>
           <td></td><td></td><td></td><td></td><td></td>
-          <td class="assinatura-col"></td>
+          <td class="assinatura-col"><span class="mini-linha"></span></td>
         </tr>
       `;
     }
@@ -623,38 +672,41 @@
     const qtdVales = dados.diasUteis * 2;
     const valorTotal = dados.tarifa * dados.diasUteis;
     return `
-      <div class="pagina-recibo recibo">
-        <div class="rec-cabecalho-doc">
-          <div class="rec-titulo">Recibo de Entrega de Vale-Transporte</div>
-          <div class="rec-subtitulo">Mês/Ano de Referência: ${meses[dados.mesIndex]}/${dados.ano}</div>
-        </div>
-        <div class="rec-caixa-info">
-          <div class="campo full">
-            <div class="rotulo">Empregadora</div>
-            <div class="valor">${escapeHtml(dados.empregadoraNome)}</div>
+      <div class="pagina-recibo recibo-novo">
+        <div class="doc-header-bar">Recibo de Vale-Transporte</div>
+        <div class="doc-corpo">
+          <div class="doc-secao-label">Declaro ter recebido de:</div>
+          <div class="doc-linha-info"><div class="rotulo">Empregadora</div><div class="valor">${escapeHtml(dados.empregadoraNome)}</div></div>
+          <div class="doc-linha-info"><div class="rotulo">Empregado(a)</div><div class="valor">${escapeHtml(dados.nome)}</div></div>
+          <div class="doc-linha-info"><div class="rotulo">Mês/Ano</div><div class="valor">${meses[dados.mesIndex]}/${dados.ano}</div></div>
+
+          <div class="doc-secao-label">Detalhamento do Vale-Transporte</div>
+          <div class="doc-linha-info"><div class="rotulo">Tarifa (ida + volta)</div><div class="valor">R$ ${formatarReais(dados.tarifa)}</div></div>
+          <div class="doc-linha-info"><div class="rotulo">Dias úteis no mês</div><div class="valor">${dados.diasUteis}</div></div>
+          <div class="doc-linha-info"><div class="rotulo">Vale-transporte entregues</div><div class="valor">${qtdVales} (${numeroPorExtenso(qtdVales)})</div></div>
+
+          <div class="doc-total-bar">
+            <div class="doc-total-rotulo">Total Recebido</div>
+            <div class="doc-total-valor">R$ ${formatarReais(valorTotal)} <span class="extenso">(${valorPorExtenso(valorTotal)})</span></div>
           </div>
-          <div class="campo full">
-            <div class="rotulo">Empregado(a)</div>
-            <div class="valor">${escapeHtml(dados.nome)}</div>
+
+          <div class="doc-texto-italico">
+            Recebi ${qtdVales} (${numeroPorExtenso(qtdVales)}) vale-transporte, no valor total de
+            R$ ${formatarReais(valorTotal)} (${valorPorExtenso(valorTotal)}), referentes ao mês de
+            ${meses[dados.mesIndex]}/${dados.ano}, destinados exclusivamente ao deslocamento
+            residência-trabalho e trabalho-residência, pelo que firmo o presente recibo.
+          </div>
+
+          <div class="doc-assinatura-linha">
+            <div class="campo-data">${escapeHtml(dados.cidade)}, ____ de ${meses[dados.mesIndex]} de ${dados.ano}.</div>
+            <div class="linha-assinatura">
+              <b>${escapeHtml(dados.nome)}</b>
+              <span>Assinatura do(a) Empregado(a)</span>
+            </div>
+            <div class="doc-assinatura-clear"></div>
           </div>
         </div>
-        <table class="rec-tabela">
-          <tr><td class="rotulo">Valor da tarifa (ida + volta)</td><td class="valor">R$ ${formatarReais(dados.tarifa)}</td></tr>
-          <tr><td class="rotulo">Quantidade de dias úteis do mês</td><td class="valor">${dados.diasUteis}</td></tr>
-          <tr><td class="rotulo">Quantidade de vale-transporte entregues</td><td class="valor">${qtdVales}</td></tr>
-          <tr class="linha-total"><td class="rotulo">Valor total do Vale-Transporte do mês</td><td class="valor">R$ ${formatarReais(valorTotal)}</td></tr>
-        </table>
-        <div class="rec-texto">
-          Recebi ${qtdVales} (${numeroPorExtenso(qtdVales)}) vale-transporte, no valor total de
-          <b>R$ ${formatarReais(valorTotal)} (${valorPorExtenso(valorTotal)})</b>,
-          referentes ao mês de ${meses[dados.mesIndex]}/${dados.ano}, destinados exclusivamente ao
-          deslocamento residência-trabalho e trabalho-residência, pelo que firmo o presente recibo.
-        </div>
-        <div class="rec-data">${escapeHtml(dados.cidade)}, ____ de ${meses[dados.mesIndex]} de ${dados.ano}.</div>
-        <div class="rec-assinatura">
-          <div class="linha">${escapeHtml(dados.nome)}</div>
-          <div class="legenda">Assinatura do(a) Empregado(a)</div>
-        </div>
+        <div class="doc-footer-bar">Documento gerado eletronicamente — válido sem rasuras</div>
       </div>
     `;
   }
@@ -689,37 +741,40 @@
   // ---------- GERAÇÃO: RECIBO DE ADIANTAMENTO ----------
   function gerarHtmlAdiantamento(dados) {
     return `
-      <div class="pagina-recibo recibo">
-        <div class="rec-cabecalho-doc">
-          <div class="rec-titulo">Recibo de Adiantamento Salarial</div>
-          <div class="rec-subtitulo">Referente ao mês de ${meses[dados.mesIndex]}/${dados.ano}</div>
-        </div>
-        <div class="rec-caixa-info">
-          <div class="campo full">
-            <div class="rotulo">Empregador</div>
-            <div class="valor">${escapeHtml(dados.empregadoraNome)}</div>
+      <div class="pagina-recibo recibo-novo">
+        <div class="doc-header-bar">Recibo de Adiantamento Salarial</div>
+        <div class="doc-corpo">
+          <div class="doc-secao-label">Declaro ter recebido de:</div>
+          <div class="doc-linha-info"><div class="rotulo">Empregador</div><div class="valor">${escapeHtml(dados.empregadoraNome)}</div></div>
+          <div class="doc-linha-info"><div class="rotulo">Empregado(a)</div><div class="valor">${escapeHtml(dados.nome)}</div></div>
+
+          <div class="doc-secao-label">Descrição do Pagamento</div>
+          <div class="doc-linha-info"><div class="rotulo">Referente a</div><div class="valor">Adiantamento salarial referente ao mês de ${meses[dados.mesIndex].toUpperCase()}/${dados.ano}</div></div>
+
+          <div class="doc-total-bar">
+            <div class="doc-total-rotulo">Total Recebido</div>
+            <div class="doc-total-valor">R$ ${formatarReais(dados.valor)} <span class="extenso">(${valorPorExtenso(dados.valor)})</span></div>
           </div>
-          <div class="campo full">
-            <div class="rotulo">Empregado(a)</div>
-            <div class="valor">${escapeHtml(dados.nome)}</div>
+
+          <div class="doc-texto-italico">
+            Eu, ${escapeHtml(dados.nome)}, declaro, para todos os efeitos, ter recebido a título de
+            "Adiantamento Salarial", a importância de R$ ${formatarReais(dados.valor)}
+            (${valorPorExtenso(dados.valor)}) e em consonância com o disposto no art. 462, caput, da CLT,
+            tenho a plena ciência de que o respectivo valor será descontado, pelo empregador, quando do
+            pagamento da minha remuneração mensal relativa à folha de pagamento do mês de
+            ${meses[dados.mesIndex].toUpperCase()}/${dados.ano}.
+          </div>
+
+          <div class="doc-assinatura-linha">
+            <div class="campo-data">${escapeHtml(dados.cidade)}, ____ de ${meses[dados.mesIndex]} de ${dados.ano}.</div>
+            <div class="linha-assinatura">
+              <b>${escapeHtml(dados.nome)}</b>
+              <span>Assinatura do(a) Empregado(a)</span>
+            </div>
+            <div class="doc-assinatura-clear"></div>
           </div>
         </div>
-        <table class="rec-tabela">
-          <tr class="linha-total"><td class="rotulo">Valor do Adiantamento Salarial</td><td class="valor">R$ ${formatarReais(dados.valor)}</td></tr>
-        </table>
-        <div class="rec-texto">
-          Eu, ${escapeHtml(dados.nome)}, declaro, para todos os efeitos, ter recebido a título de
-          "Adiantamento Salarial", a importância de <b>R$ ${formatarReais(dados.valor)}
-          (${valorPorExtenso(dados.valor)})</b> e em consonância com o disposto no art. 462, caput, da CLT,
-          tenho a plena ciência de que o respectivo valor será descontado, pelo empregador, quando do
-          pagamento da minha remuneração mensal relativa à folha de pagamento do mês de
-          ${meses[dados.mesIndex].toUpperCase()}/${dados.ano}.
-        </div>
-        <div class="rec-data">${escapeHtml(dados.cidade)}, ____ de ${meses[dados.mesIndex]} de ${dados.ano}.</div>
-        <div class="rec-assinatura">
-          <div class="linha">${escapeHtml(dados.nome)}</div>
-          <div class="legenda">Assinatura do(a) Empregado(a)</div>
-        </div>
+        <div class="doc-footer-bar">Documento gerado eletronicamente — válido sem rasuras</div>
       </div>
     `;
   }
