@@ -121,44 +121,88 @@
   #areaImpressao{ display:none; }
 
   @media print{
-    header.topo, .abas, .card, footer.rodape{ display:none !important; }
+    header.topo, main, footer.rodape{ display:none !important; }
     body{ background:#fff; }
     #areaImpressao{ display:block; }
+    @page{ size: A4; margin: 10mm 14mm; }
   }
 
   .pagina-recibo{
     width: 100%;
-    max-width: 720px;
+    max-width: 190mm;
     margin: 0 auto;
-    padding: 30px 10px;
     page-break-after: always;
-    font-size: 13px;
-    line-height:1.5;
-    color:#000;
+    font-family: Arial, Helvetica, sans-serif;
+    color:#111;
   }
   .pagina-recibo:last-child{ page-break-after: auto; }
-  .rec-titulo{ text-align:center; font-size:15px; font-weight:700; margin-bottom:18px; text-transform:uppercase; }
-  .rec-linha{ margin-bottom:6px; }
-  .rec-tabela{ width:100%; border-collapse:collapse; margin:14px 0; }
-  .rec-tabela td{ border:1px solid #999; padding:6px 10px; font-size:12.5px; }
-  .rec-tabela td.rotulo{ width:70%; }
-  .rec-tabela td.valor{ text-align:right; font-weight:700; }
-  .rec-texto{ text-align:justify; margin:16px 0; }
-  .rec-assinatura{ margin-top:60px; text-align:center; }
-  .rec-assinatura .linha{ border-top:1px solid #000; width:320px; margin:0 auto 6px; padding-top:4px; font-weight:700; }
-  .rec-assinatura .legenda{ font-size:11.5px; }
-  .rec-data{ margin-top:30px; }
 
-  table.folha-ponto{ width:100%; border-collapse:collapse; font-size:10.5px; }
-  table.folha-ponto th, table.folha-ponto td{ border:1px solid #666; padding:4px 3px; text-align:center; }
-  table.folha-ponto th{ background:#eee; font-size:9px; }
-  table.folha-ponto td.dia{ font-weight:700; width:26px; }
-  table.folha-ponto td.assinatura-col{ width:130px; }
-  table.folha-ponto tr.fds td{ background:#f2f2f2; color:#999; }
-  .ponto-cabecalho{ display:grid; grid-template-columns:1fr 1fr; border:1px solid #666; margin-bottom:10px; font-size:11.5px; }
-  .ponto-cabecalho .bloco{ padding:8px 10px; border-right:1px solid #666; }
+  .pagina-recibo.recibo{ padding: 6mm 4mm; font-size: 12.5px; line-height:1.55; }
+
+  .rec-cabecalho-doc{ text-align:center; margin-bottom:16px; }
+  .rec-titulo{
+    font-size: 16px; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
+    padding-bottom:10px; margin-bottom:2px; border-bottom: 2px solid #222;
+  }
+  .rec-subtitulo{ font-size:11px; color:#555; margin-top:6px; letter-spacing:0.02em; }
+
+  .rec-caixa-info{
+    display:grid; grid-template-columns: 1fr 1fr; border:1px solid #444; margin-bottom:16px; font-size:12px;
+  }
+  .rec-caixa-info .campo{ padding:9px 12px; border-right:1px solid #444; border-bottom:1px solid #444; }
+  .rec-caixa-info .campo:nth-child(even){ border-right:none; }
+  .rec-caixa-info .campo:nth-last-child(-n+2){ border-bottom:none; }
+  .rec-caixa-info .campo.full{ grid-column: 1 / -1; border-right:none; }
+  .rec-caixa-info .rotulo{ font-size:9.5px; text-transform:uppercase; letter-spacing:0.04em; color:#666; font-weight:700; margin-bottom:2px; }
+  .rec-caixa-info .valor{ font-weight:600; }
+
+  .rec-tabela{ width:100%; border-collapse:collapse; margin:16px 0; font-size:12px; }
+  .rec-tabela td{ border:1px solid #444; padding:8px 12px; }
+  .rec-tabela td.rotulo{ width:68%; }
+  .rec-tabela td.valor{ text-align:right; font-weight:700; white-space:nowrap; }
+  .rec-tabela tr.linha-total td{ background:#f0efec; font-size:12.5px; }
+  .rec-tabela tr.linha-total td.valor{ font-size:13.5px; }
+
+  .rec-texto{ text-align:justify; margin:18px 0; font-size:12.5px; }
+  .rec-texto b{ font-weight:700; }
+
+  .rec-data{ margin:26px 0 0; font-size:12.5px; }
+
+  .rec-assinatura{ margin-top:50px; text-align:center; }
+  .rec-assinatura .linha{ border-top:1px solid #000; width:340px; margin:0 auto; padding-top:6px; font-weight:700; font-size:12.5px; }
+  .rec-assinatura .legenda{ font-size:11px; color:#444; margin-top:2px; }
+
+  .rec-rodape-doc{ margin-top:30px; padding-top:8px; border-top:1px solid #ccc; font-size:9.5px; color:#888; text-align:center; }
+
+  /* ---------- FOLHA DE PONTO (uma página só) ---------- */
+  .pagina-recibo.ponto{ padding: 0; font-size: 11px; height: 277mm; }
+
+  .ponto-titulo{
+    text-align:center; font-size:14.5px; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.03em; padding-bottom:8px; margin-bottom:8px; border-bottom:2px solid #222;
+  }
+
+  .ponto-cabecalho{
+    display:grid; grid-template-columns: 1fr 1fr; border:1px solid #444; margin-bottom:8px; font-size:10.5px; flex-shrink:0;
+  }
+  .ponto-cabecalho .bloco{ padding:6px 10px; border-right:1px solid #444; }
   .ponto-cabecalho .bloco:last-child{ border-right:none; }
-  .ponto-cabecalho .rotulo-bloco{ font-weight:700; font-size:10px; text-transform:uppercase; color:#555; margin-bottom:4px; }
+  .ponto-cabecalho .rotulo-bloco{ font-weight:700; font-size:9px; text-transform:uppercase; letter-spacing:0.03em; color:#555; margin-bottom:3px; }
+  .ponto-cabecalho .campo-linha{ margin-bottom:1px; }
+
+  table.folha-ponto{ width:100%; border-collapse:collapse; font-size:9.5px; flex:1; table-layout:fixed; }
+  table.folha-ponto th, table.folha-ponto td{ border:1px solid #555; text-align:center; line-height:1; }
+  table.folha-ponto tbody td{ height: 6.6mm; }
+  table.folha-ponto th{ background:#e9e7e2; font-size:8.3px; font-weight:700; padding:3px 2px; line-height:1.15; }
+  table.folha-ponto td{ padding:0; }
+  table.folha-ponto td.dia{ font-weight:700; width:9%; background:#f7f6f4; }
+  table.folha-ponto td.assinatura-col{ width:22%; }
+  table.folha-ponto tr.fds td.dia{ color:#999; font-weight:600; }
+  table.folha-ponto tr.fds td{ background:#f2f2f0; }
+  table.folha-ponto col.col-dia{ width:9%; }
+  table.folha-ponto col.col-assinatura{ width:22%; }
+
+  .ponto-rodape{ margin-top:8px; font-size:9px; color:#777; text-align:center; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -502,31 +546,37 @@
     for (let dia = 1; dia <= totalDias; dia++) {
       const diaSemana = new Date(dados.ano, dados.mesIndex, dia).getDay();
       const ehFds = diaSemana === 0 || diaSemana === 6;
+      const siglaDia = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][diaSemana];
       linhasTabela += `
         <tr class="${ehFds ? "fds" : ""}">
-          <td class="dia">${String(dia).padStart(2, "0")}${ehFds ? (diaSemana === 0 ? " (dom)" : " (sáb)") : ""}</td>
+          <td class="dia">${String(dia).padStart(2, "0")} ${siglaDia}</td>
           <td></td><td></td><td></td><td></td><td></td>
           <td class="assinatura-col"></td>
         </tr>
       `;
     }
     return `
-      <div class="pagina-recibo">
-        <div class="rec-titulo">Folha de Ponto — Período: ${capitalizar(meses[dados.mesIndex])}/${dados.ano}</div>
+      <div class="pagina-recibo ponto">
+        <div class="ponto-titulo">Folha de Ponto — Período: ${capitalizar(meses[dados.mesIndex])}/${dados.ano}</div>
         <div class="ponto-cabecalho">
           <div class="bloco">
             <div class="rotulo-bloco">Empregadora</div>
-            Nome: ${escapeHtml(dados.empregadoraNome)}<br>
-            ${dados.empregadoraCpf ? "CPF/CNPJ: " + escapeHtml(dados.empregadoraCpf) : ""}
+            <div class="campo-linha"><b>Nome:</b> ${escapeHtml(dados.empregadoraNome)}</div>
+            ${dados.empregadoraCpf ? `<div class="campo-linha"><b>CPF/CNPJ:</b> ${escapeHtml(dados.empregadoraCpf)}</div>` : ""}
           </div>
           <div class="bloco">
             <div class="rotulo-bloco">Empregado(a)</div>
-            Nome: ${escapeHtml(dados.nome)}<br>
-            ${dados.cpf ? "CPF: " + escapeHtml(dados.cpf) + "<br>" : ""}
-            Cargo: ${escapeHtml(dados.cargo)}
+            <div class="campo-linha"><b>Nome:</b> ${escapeHtml(dados.nome)}</div>
+            ${dados.cpf ? `<div class="campo-linha"><b>CPF:</b> ${escapeHtml(dados.cpf)}</div>` : ""}
+            <div class="campo-linha"><b>Cargo:</b> ${escapeHtml(dados.cargo)}</div>
           </div>
         </div>
         <table class="folha-ponto">
+          <colgroup>
+            <col class="col-dia">
+            <col><col><col><col><col>
+            <col class="col-assinatura">
+          </colgroup>
           <thead>
             <tr>
               <th>Dia</th>
@@ -540,6 +590,7 @@
           </thead>
           <tbody>${linhasTabela}</tbody>
         </table>
+        <div class="ponto-rodape">K A Carvalho Said · Departamento Pessoal</div>
       </div>
     `;
   }
@@ -572,16 +623,26 @@
     const qtdVales = dados.diasUteis * 2;
     const valorTotal = dados.tarifa * dados.diasUteis;
     return `
-      <div class="pagina-recibo">
-        <div class="rec-titulo">Recibo de Entrega de Vale-Transporte</div>
-        <div class="rec-linha"><b>Empregadora:</b> ${escapeHtml(dados.empregadoraNome)}</div>
-        <div class="rec-linha"><b>Empregado(a):</b> ${escapeHtml(dados.nome)}</div>
-        <div class="rec-linha"><b>Mês/Ano de Referência:</b> ${meses[dados.mesIndex]}/${dados.ano}</div>
+      <div class="pagina-recibo recibo">
+        <div class="rec-cabecalho-doc">
+          <div class="rec-titulo">Recibo de Entrega de Vale-Transporte</div>
+          <div class="rec-subtitulo">Mês/Ano de Referência: ${meses[dados.mesIndex]}/${dados.ano}</div>
+        </div>
+        <div class="rec-caixa-info">
+          <div class="campo full">
+            <div class="rotulo">Empregadora</div>
+            <div class="valor">${escapeHtml(dados.empregadoraNome)}</div>
+          </div>
+          <div class="campo full">
+            <div class="rotulo">Empregado(a)</div>
+            <div class="valor">${escapeHtml(dados.nome)}</div>
+          </div>
+        </div>
         <table class="rec-tabela">
           <tr><td class="rotulo">Valor da tarifa (ida + volta)</td><td class="valor">R$ ${formatarReais(dados.tarifa)}</td></tr>
           <tr><td class="rotulo">Quantidade de dias úteis do mês</td><td class="valor">${dados.diasUteis}</td></tr>
           <tr><td class="rotulo">Quantidade de vale-transporte entregues</td><td class="valor">${qtdVales}</td></tr>
-          <tr><td class="rotulo">Valor total do Vale-Transporte do mês</td><td class="valor">R$ ${formatarReais(valorTotal)}</td></tr>
+          <tr class="linha-total"><td class="rotulo">Valor total do Vale-Transporte do mês</td><td class="valor">R$ ${formatarReais(valorTotal)}</td></tr>
         </table>
         <div class="rec-texto">
           Recebi ${qtdVales} (${numeroPorExtenso(qtdVales)}) vale-transporte, no valor total de
@@ -628,15 +689,28 @@
   // ---------- GERAÇÃO: RECIBO DE ADIANTAMENTO ----------
   function gerarHtmlAdiantamento(dados) {
     return `
-      <div class="pagina-recibo">
-        <div class="rec-titulo">Recibo de Adiantamento Salarial</div>
-        <div class="rec-linha"><b>Adiantamento Salarial do mês/ano:</b> ${String(dados.mesIndex + 1).padStart(2, "0")}/${dados.ano}</div>
-        <div class="rec-linha"><b>Valor:</b> R$ ${formatarReais(dados.valor)} (${valorPorExtenso(dados.valor).toUpperCase()})</div>
-        <div class="rec-linha"><b>Empregador:</b> ${escapeHtml(dados.empregadoraNome)}</div>
+      <div class="pagina-recibo recibo">
+        <div class="rec-cabecalho-doc">
+          <div class="rec-titulo">Recibo de Adiantamento Salarial</div>
+          <div class="rec-subtitulo">Referente ao mês de ${meses[dados.mesIndex]}/${dados.ano}</div>
+        </div>
+        <div class="rec-caixa-info">
+          <div class="campo full">
+            <div class="rotulo">Empregador</div>
+            <div class="valor">${escapeHtml(dados.empregadoraNome)}</div>
+          </div>
+          <div class="campo full">
+            <div class="rotulo">Empregado(a)</div>
+            <div class="valor">${escapeHtml(dados.nome)}</div>
+          </div>
+        </div>
+        <table class="rec-tabela">
+          <tr class="linha-total"><td class="rotulo">Valor do Adiantamento Salarial</td><td class="valor">R$ ${formatarReais(dados.valor)}</td></tr>
+        </table>
         <div class="rec-texto">
           Eu, ${escapeHtml(dados.nome)}, declaro, para todos os efeitos, ter recebido a título de
-          "Adiantamento Salarial", a importância de R$ ${formatarReais(dados.valor)}
-          (${valorPorExtenso(dados.valor)}) e em consonância com o disposto no art. 462, caput, da CLT,
+          "Adiantamento Salarial", a importância de <b>R$ ${formatarReais(dados.valor)}
+          (${valorPorExtenso(dados.valor)})</b> e em consonância com o disposto no art. 462, caput, da CLT,
           tenho a plena ciência de que o respectivo valor será descontado, pelo empregador, quando do
           pagamento da minha remuneração mensal relativa à folha de pagamento do mês de
           ${meses[dados.mesIndex].toUpperCase()}/${dados.ano}.
@@ -644,6 +718,7 @@
         <div class="rec-data">${escapeHtml(dados.cidade)}, ____ de ${meses[dados.mesIndex]} de ${dados.ano}.</div>
         <div class="rec-assinatura">
           <div class="linha">${escapeHtml(dados.nome)}</div>
+          <div class="legenda">Assinatura do(a) Empregado(a)</div>
         </div>
       </div>
     `;
