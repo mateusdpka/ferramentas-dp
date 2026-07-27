@@ -2043,7 +2043,7 @@
     const form = document.getElementById("formFuncionario");
     form.reset();
     if (id){
-      const f = funcionarios.find(x => x.id === id);
+      const f = funcionarios.find(x => String(x.id) === String(id));
       if (!f) return;
       funcionarioEmEdicaoId = id;
       document.getElementById("modalFuncionarioTitulo").textContent = "Editar funcionário";
@@ -2102,7 +2102,7 @@
   });
 
   async function excluirFuncionario(id){
-    const f = funcionarios.find(x => x.id === id);
+    const f = funcionarios.find(x => String(x.id) === String(id));
     if (!f) return;
     const confirmado = window.confirm(`Excluir "${f.nome}" da lista de aniversários?`);
     if (!confirmado) return;
