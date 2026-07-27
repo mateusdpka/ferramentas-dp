@@ -334,6 +334,7 @@
         </div>
         <button type="button" class="btn-secundario" id="btnNovaEmpregadora">+ Nova empregadora</button>
         <button type="button" class="btn-secundario" id="btnEditarEmpregadora" style="display:none;">Editar</button>
+        <button type="button" class="btn-secundario" id="btnGerenciarEmpregados" style="display:none;">Gerenciar empregados</button>
       </div>
       <div class="badge-topo" id="infoEmpregadoraAtual" style="display:none;"></div>
     </div>
@@ -377,6 +378,18 @@
             <label for="pontoHoraSaida">Saída</label>
             <input type="text" id="pontoHoraSaida" value="17:00">
           </div>
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="pontoIntervaloVariavel" style="width:auto;">
+          <label for="pontoIntervaloVariavel" style="margin:0; font-weight:400;">Intervalo com horário variável (mostra só a duração, ex: "1h", sem hora fixa — a empregada anota o horário real que tirou naquele dia)</label>
+        </div>
+        <div class="form-group" id="grupoDuracaoIntervalo" style="display:none; max-width:200px;">
+          <label for="pontoDuracaoIntervalo">Duração do intervalo</label>
+          <input type="text" id="pontoDuracaoIntervalo" value="1h">
+        </div>
+        <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="pontoTrabalhaTodosDias" style="width:auto;">
+          <label for="pontoTrabalhaTodosDias" style="margin:0; font-weight:400;">Regime cama e mesa / trabalha todos os dias, inclusive domingos e feriados (não sombrear nenhum dia)</label>
         </div>
 
         <table class="tabela-func" id="tabelaPonto">
@@ -508,7 +521,7 @@
   <!-- MODAL NOVO EMPREGADO -->
   <div class="login-overlay" id="modalEmpregadoOverlay" style="display:none; z-index:150;">
     <div class="login-box" style="max-width:420px;">
-      <h3 class="card-title">Novo empregado(a)</h3>
+      <h3 class="card-title" id="modalEmpregadoTitulo">Novo empregado(a)</h3>
       <p class="card-sub" id="modalEmpregadoSub"></p>
       <form id="formEmpregado">
         <div class="form-group">
@@ -528,6 +541,18 @@
           <button type="submit" class="btn-primario">Salvar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL GERENCIAR EMPREGADOS -->
+  <div class="login-overlay" id="modalGerenciarOverlay" style="display:none; z-index:140;">
+    <div class="login-box" style="max-width:520px;">
+      <h3 class="card-title">Empregados de <span id="modalGerenciarEmpregadoraNome"></span></h3>
+      <div id="listaGerenciarEmpregados"></div>
+      <div class="acoes-form">
+        <button type="button" class="btn-secundario" id="btnFecharGerenciar">Fechar</button>
+        <button type="button" class="btn-primario" id="btnGerenciarNovoEmpregado">+ Novo empregado(a)</button>
+      </div>
     </div>
   </div>
 
@@ -784,11 +809,13 @@
     const emp = empregadoraAtual();
     if (emp){
       infoEmpregadoraAtual.style.display = "block";
-      infoEmpregadoraAtual.innerHTML = `<b>${escapeHtml(emp.nome)}</b>${emp.cpfCnpj ? " · " + escapeHtml(emp.cpfCnpj) : ""} · ${empregados.filter(x => x.empregadorId === emp.id).length} empregado(s) cadastrado(s)`;
+      infoEmpregadoraAtual.innerHTML = `<b>${escapeHtml(emp.nome)}</b>${emp.cpfCnpj ? " · " + escapeHtml(emp.cpfCnpj) : ""} · ${empregados.filter(x => Number(x.empregadorId) === Number(emp.id)).length} empregado(s) cadastrado(s)`;
       btnEditarEmpregadora.style.display = "inline-block";
+      document.getElementById("btnGerenciarEmpregados").style.display = "inline-block";
     } else {
       infoEmpregadoraAtual.style.display = "none";
       btnEditarEmpregadora.style.display = "none";
+      document.getElementById("btnGerenciarEmpregados").style.display = "none";
     }
     atualizarTodosSelectsDeEmpregado();
   }
@@ -847,15 +874,28 @@
   const modalEmpregadoOverlay = document.getElementById("modalEmpregadoOverlay");
   const formEmpregado = document.getElementById("formEmpregado");
   let selectDeOrigemParaNovoEmpregado = null;
+  let empregadoEmEdicaoId = null;
 
-  function abrirModalEmpregado(selectOrigem){
+  function abrirModalEmpregado(selectOrigem, idParaEditar){
     if (!empregadorAtualId){
       alert("Escolha ou cadastre uma empregadora primeiro.");
       return;
     }
-    selectDeOrigemParaNovoEmpregado = selectOrigem;
+    selectDeOrigemParaNovoEmpregado = selectOrigem || null;
     formEmpregado.reset();
-    document.getElementById("campoEmpregadoCargo").value = "EMPREGADA - DOMÉSTICA";
+    if (idParaEditar){
+      const emp = empregados.find(e => e.id === idParaEditar);
+      if (!emp) return;
+      empregadoEmEdicaoId = idParaEditar;
+      document.getElementById("modalEmpregadoTitulo").textContent = "Editar empregado(a)";
+      document.getElementById("campoEmpregadoNome").value = emp.nome;
+      document.getElementById("campoEmpregadoCpf").value = emp.cpf;
+      document.getElementById("campoEmpregadoCargo").value = emp.cargo;
+    } else {
+      empregadoEmEdicaoId = null;
+      document.getElementById("modalEmpregadoTitulo").textContent = "Novo empregado(a)";
+      document.getElementById("campoEmpregadoCargo").value = "EMPREGADA - DOMÉSTICA";
+    }
     document.getElementById("modalEmpregadoSub").textContent = `Vinculado a: ${empregadoraAtual().nome}`;
     modalEmpregadoOverlay.style.display = "flex";
   }
@@ -870,19 +910,82 @@
     const cargo = document.getElementById("campoEmpregadoCargo").value.trim() || "EMPREGADA - DOMÉSTICA";
     if (!nome) return;
 
-    const { data, error } = await supabaseClient.from("empregados_domesticos")
-      .insert({ empregador_id: empregadorAtualId, nome, cpf: cpf || null, cargo })
-      .select().single();
-    if (error){ alert("Não foi possível salvar."); return; }
+    let idSalvo = empregadoEmEdicaoId;
+    if (empregadoEmEdicaoId){
+      const { error } = await supabaseClient.from("empregados_domesticos")
+        .update({ nome, cpf: cpf || null, cargo }).eq("id", empregadoEmEdicaoId);
+      if (error){ alert("Não foi possível salvar."); return; }
+    } else {
+      const { data, error } = await supabaseClient.from("empregados_domesticos")
+        .insert({ empregador_id: empregadorAtualId, nome, cpf: cpf || null, cargo })
+        .select().single();
+      if (error){ alert("Não foi possível salvar."); return; }
+      idSalvo = data.id;
+    }
 
     await carregarEmpregados();
     atualizarInfoEmpregadora();
     if (selectDeOrigemParaNovoEmpregado){
       popularSelectDeEmpregado(selectDeOrigemParaNovoEmpregado);
-      selectDeOrigemParaNovoEmpregado.value = data.id;
+      selectDeOrigemParaNovoEmpregado.value = idSalvo;
       selectDeOrigemParaNovoEmpregado.dispatchEvent(new Event("change"));
     }
+    if (modalGerenciarOverlay.style.display === "flex") renderizarListaGerenciar();
     fecharModalEmpregado();
+  });
+
+  // ---- modal gerenciar empregados ----
+  const modalGerenciarOverlay = document.getElementById("modalGerenciarOverlay");
+
+  function renderizarListaGerenciar(){
+    const emp = empregadoraAtual();
+    if (!emp) return;
+    document.getElementById("modalGerenciarEmpregadoraNome").textContent = emp.nome;
+    const lista = empregados.filter(e => e.empregadorId === Number(empregadorAtualId));
+    const container = document.getElementById("listaGerenciarEmpregados");
+    if (lista.length === 0){
+      container.innerHTML = `<p class="card-sub">Nenhum empregado cadastrado ainda.</p>`;
+      return;
+    }
+    container.innerHTML = lista.map(e => `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--borda);">
+        <div>
+          <div style="font-weight:700; font-size:13.5px;">${escapeHtml(e.nome)}</div>
+          <div style="font-size:12px; color:var(--texto-suave);">${e.cpf ? escapeHtml(e.cpf) + " · " : ""}${escapeHtml(e.cargo)}</div>
+        </div>
+        <div style="display:flex; gap:6px; flex-shrink:0;">
+          <button type="button" class="btn-secundario" onclick="editarEmpregadoDaLista(${e.id})">Editar</button>
+          <button type="button" class="btn-secundario" style="color:#b3261e;" onclick="excluirEmpregadoDaLista(${e.id})">Excluir</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  window.editarEmpregadoDaLista = function(id){
+    abrirModalEmpregado(null, id);
+  };
+
+  window.excluirEmpregadoDaLista = async function(id){
+    const emp = empregados.find(e => e.id === id);
+    if (!emp) return;
+    if (!confirm(`Excluir "${emp.nome}"? Essa ação não pode ser desfeita.`)) return;
+    const { error } = await supabaseClient.from("empregados_domesticos").delete().eq("id", id);
+    if (error){ alert("Não foi possível excluir."); return; }
+    await carregarEmpregados();
+    atualizarInfoEmpregadora();
+    renderizarListaGerenciar();
+  };
+
+  document.getElementById("btnGerenciarEmpregados").addEventListener("click", () => {
+    if (!empregadorAtualId) return;
+    renderizarListaGerenciar();
+    modalGerenciarOverlay.style.display = "flex";
+  });
+  document.getElementById("btnFecharGerenciar").addEventListener("click", () => {
+    modalGerenciarOverlay.style.display = "none";
+  });
+  document.getElementById("btnGerenciarNovoEmpregado").addEventListener("click", () => {
+    abrirModalEmpregado(null, null);
   });
 
   // popula um <select> de linha com os empregados da empregadora atual
@@ -980,26 +1083,39 @@
   });
 
   // ---------- GERAÇÃO: FOLHA DE PONTO ----------
+  const checkboxIntervaloVariavel = document.getElementById("pontoIntervaloVariavel");
+  checkboxIntervaloVariavel.addEventListener("change", () => {
+    const variavel = checkboxIntervaloVariavel.checked;
+    document.getElementById("grupoDuracaoIntervalo").style.display = variavel ? "block" : "none";
+    document.getElementById("pontoHoraIntervaloInicio").closest(".form-group").style.display = variavel ? "none" : "block";
+    document.getElementById("pontoHoraIntervaloFim").closest(".form-group").style.display = variavel ? "none" : "block";
+  });
+
   function diasNoMes(ano, mesIndex) {
     return new Date(ano, mesIndex + 1, 0).getDate();
   }
 
   function gerarHtmlPonto(dados) {
     const totalDias = diasNoMes(dados.ano, dados.mesIndex);
+    const intervaloMesclado = dados.intervaloVariavel;
     let linhasTabela = "";
     for (let dia = 1; dia <= totalDias; dia++) {
       const dataDia = new Date(dados.ano, dados.mesIndex, dia);
       const ehDomingo = dataDia.getDay() === 0;
       const ehFeriado = ehFeriadoNacional(dataDia);
-      const folga = ehDomingo || ehFeriado;
+      const folga = !dados.trabalhaTodosDias && (ehDomingo || ehFeriado);
+      const celulaIntervalo = intervaloMesclado ? `<td colspan="2"></td>` : `<td></td><td></td>`;
       linhasTabela += `
         <tr class="${folga ? "fds" : ""}">
           <td class="dia">${String(dia).padStart(2, "0")}${ehFeriado ? " *" : ""}</td>
-          <td></td><td></td><td></td><td></td><td></td>
+          <td></td>${celulaIntervalo}<td></td><td></td>
           <td class="assinatura-col"><span class="mini-linha"></span></td>
         </tr>
       `;
     }
+    const cabecalhoIntervalo = intervaloMesclado
+      ? `<th colspan="2">Intervalo<br>(${escapeHtml(dados.duracaoIntervalo)})</th>`
+      : `<th>Início do<br>Intervalo ${escapeHtml(dados.horaIntervaloInicio)}</th><th>Fim do<br>Intervalo ${escapeHtml(dados.horaIntervaloFim)}</th>`;
     return `
       <div class="pagina-recibo ponto">
         <div class="ponto-titulo">Folha de Ponto — Período: ${capitalizar(meses[dados.mesIndex])}/${dados.ano}</div>
@@ -1025,9 +1141,8 @@
           <thead>
             <tr>
               <th>Dia</th>
-              <th>Entrada<br>Seg. a Sext. ${escapeHtml(dados.horaEntrada)}</th>
-              <th>Início do<br>Intervalo ${escapeHtml(dados.horaIntervaloInicio)}</th>
-              <th>Fim do<br>Intervalo ${escapeHtml(dados.horaIntervaloFim)}</th>
+              <th>Entrada<br>${escapeHtml(dados.horaEntrada)}</th>
+              ${cabecalhoIntervalo}
               <th>Saída<br>${escapeHtml(dados.horaSaida)}</th>
               <th>Hora<br>Extra</th>
               <th>Assinatura do<br>Empregado(a)</th>
@@ -1035,7 +1150,7 @@
           </thead>
           <tbody>${linhasTabela}</tbody>
         </table>
-        <div class="ponto-rodape">Linhas sombreadas: domingos e feriados · * = feriado nacional</div>
+        <div class="ponto-rodape">${dados.trabalhaTodosDias ? "Regime cama e mesa — trabalha todos os dias · * = feriado nacional" : "Linhas sombreadas: domingos e feriados · * = feriado nacional"}</div>
       </div>
     `;
   }
@@ -1051,13 +1166,16 @@
     const horaIntervaloInicio = document.getElementById("pontoHoraIntervaloInicio").value.trim() || "12:00";
     const horaIntervaloFim = document.getElementById("pontoHoraIntervaloFim").value.trim() || "13:00";
     const horaSaida = document.getElementById("pontoHoraSaida").value.trim() || "17:00";
+    const intervaloVariavel = document.getElementById("pontoIntervaloVariavel").checked;
+    const duracaoIntervalo = document.getElementById("pontoDuracaoIntervalo").value.trim() || "1h";
+    const trabalhaTodosDias = document.getElementById("pontoTrabalhaTodosDias").checked;
 
     const linhas = [...document.querySelectorAll("#tabelaPontoBody tr")];
     const paginas = linhas.map(tr => {
       const empregadoId = tr.querySelector(".ponto-empregado").value;
       const empregado = empregados.find(e => String(e.id) === empregadoId);
       if (!empregado) return "";
-      return gerarHtmlPonto({ empregadoraNome, empregadoraCpf, mesIndex, ano, nome: empregado.nome, cpf: empregado.cpf, cargo: empregado.cargo, horaEntrada, horaIntervaloInicio, horaIntervaloFim, horaSaida });
+      return gerarHtmlPonto({ empregadoraNome, empregadoraCpf, mesIndex, ano, nome: empregado.nome, cpf: empregado.cpf, cargo: empregado.cargo, horaEntrada, horaIntervaloInicio, horaIntervaloFim, horaSaida, intervaloVariavel, duracaoIntervalo, trabalhaTodosDias });
     }).filter(Boolean);
 
     if (paginas.length === 0) {
