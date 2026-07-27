@@ -126,6 +126,11 @@
     body{ background:#fff; }
     #areaImpressao{ display:block; }
     @page{ size: A4; margin: 10mm 14mm; }
+    #areaImpressao, #areaImpressao *{
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+    }
   }
 
   .pagina-recibo{
