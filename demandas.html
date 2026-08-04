@@ -1172,7 +1172,7 @@
     white-space: nowrap;
   }
   .prioridade-baixa{ color: #3a6b8a; background: rgba(58,107,138,0.12); }
-  .prioridade-media{ color: #9a5b12; background: rgba(217,123,63,0.14); }
+  .prioridade-media{ color: #8a7300; background: rgba(230,190,0,0.18); }
   .prioridade-alta{ color: #b3261e; background: rgba(179,38,30,0.1); }
 
   .tag-status{
@@ -2873,13 +2873,18 @@
     const textoBusca = buscaObrigacoes.value.trim();
     const estadoMesFiltro = obterEstadoMes();
     const grupoSelecionadoObrig = filtroGrupoEmpresarialObrigacoesEl.value;
-    const empresasFiltradas = empresas.filter(emp =>
-      emp.ativa &&
-      empresaCombinaComBusca(emp, textoBusca) &&
-      (filtroTipoCliente === "todos" || emp.tipoCliente === filtroTipoCliente) &&
-      (grupoSelecionadoObrig === "todos" || emp.grupoEmpresarial === grupoSelecionadoObrig) &&
-      empresaBateFiltroObrigacao(emp, estadoMesFiltro[emp.id] || estadoVazioParaEmpresa())
-    );
+    const empresasFiltradas = empresas.filter(emp => {
+      if (!emp.ativa) return false;
+      if (!empresaCombinaComBusca(emp, textoBusca)) return false;
+      if (filtroTipoCliente !== "todos" && emp.tipoCliente !== filtroTipoCliente) return false;
+      if (grupoSelecionadoObrig === "todos"){
+        // sem grupo específico escolhido: na visão isolada de "Empresas (PJ)", não repete quem já tem grupo próprio
+        if (filtroTipoCliente === "pj" && emp.grupoEmpresarial) return false;
+      } else if (emp.grupoEmpresarial !== grupoSelecionadoObrig){
+        return false;
+      }
+      return empresaBateFiltroObrigacao(emp, estadoMesFiltro[emp.id] || estadoVazioParaEmpresa());
+    });
 
     if (empresasFiltradas.length === 0){
       obrigacoesVazio.style.display = "block";
@@ -3146,7 +3151,7 @@
           <span class="grafico-legenda-valor">${r.porPrioridade.alta}</span>
         </div>
         <div class="grafico-legenda-item">
-          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#9a5b12;"></span>Pendentes · prioridade média</span>
+          <span class="grafico-legenda-rotulo"><span class="grafico-legenda-ponto" style="background:#8a7300;"></span>Pendentes · prioridade média</span>
           <span class="grafico-legenda-valor">${r.porPrioridade.media}</span>
         </div>
         <div class="grafico-legenda-item">
@@ -3314,7 +3319,11 @@
     const filtradas = empresas.filter(emp => {
       if (!empresaCombinaComBusca(emp, textoBusca)) return false;
       if (filtroTipoClienteEmpresa !== "todos" && emp.tipoCliente !== filtroTipoClienteEmpresa) return false;
-      if (grupoSelecionado !== "todos" && emp.grupoEmpresarial !== grupoSelecionado) return false;
+      if (grupoSelecionado === "todos"){
+        if (filtroTipoClienteEmpresa === "pj" && emp.grupoEmpresarial) return false;
+      } else if (emp.grupoEmpresarial !== grupoSelecionado){
+        return false;
+      }
       if (filtroEmpresaStatus === "ativas") return emp.ativa;
       if (filtroEmpresaStatus === "desabilitadas") return !emp.ativa;
       return true;
