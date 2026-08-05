@@ -526,6 +526,32 @@
     font-size: 13.5px;
   }
 
+  .painel-solicitacoes-urgentes{
+    margin-top: 20px;
+    background: rgba(179,38,30,0.05);
+    border: 1px solid rgba(179,38,30,0.2);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+
+  .painel-solicitacoes-urgentes .card-title{
+    color: #b3261e;
+    margin-bottom: 12px;
+  }
+
+  .solicitacao-urgente-linha{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(179,38,30,0.15);
+  }
+  .solicitacao-urgente-linha:last-child{ border-bottom:none; }
+
+  .solicitacao-urgente-titulo{ font-size: 13.5px; font-weight: 700; color: var(--texto); }
+  .solicitacao-urgente-empresa{ font-size: 12px; color: var(--texto-suave); margin-top: 1px; }
+
   /* DASHBOARD DE GRÁFICOS */
   .dashboard-graficos{
     display:grid;
@@ -615,6 +641,49 @@
     color: var(--texto-suave);
     text-align:center;
     padding: 20px 0;
+  }
+
+  .historico-barras{
+    display:flex;
+    align-items:flex-end;
+    gap: 14px;
+    height: 160px;
+    padding: 10px 6px 0;
+  }
+
+  .historico-coluna{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    height:100%;
+  }
+
+  .historico-percentual{
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--texto);
+    margin-bottom: 4px;
+  }
+
+  .historico-barra{
+    width: 100%;
+    max-width: 42px;
+    background: var(--marca-dourado);
+    border-radius: 5px 5px 0 0;
+    transition: height 0.2s ease;
+  }
+
+  .historico-barra.mes-atual{
+    background: var(--marca-escura);
+  }
+
+  .historico-mes-label{
+    font-size: 11px;
+    color: var(--texto-suave);
+    margin-top: 8px;
+    text-align:center;
   }
 
   .emails-toolbar{
@@ -1425,6 +1494,7 @@
           <!-- gerado via JS -->
         </div>
         <div id="painelAniversariosContainer"></div>
+        <div id="painelSolicitacoesUrgentesContainer"></div>
         <div class="dashboard-graficos">
           <div class="card grafico-card">
             <h3 class="card-title">Progresso das obrigações do mês</h3>
@@ -1434,6 +1504,10 @@
             <h3 class="card-title">Solicitações</h3>
             <div class="grafico-conteudo" id="graficoSolicitacoesContainer"></div>
           </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Histórico de desempenho (últimos 6 meses)</h3>
+          <div id="historicoDesempenhoContainer"></div>
         </div>
         <div class="card">
           <h3 class="card-title">Próximos vencimentos</h3>
@@ -2039,6 +2113,47 @@
     `;
   }
 
+  function renderizarSolicitacoesUrgentesPainel(){
+    const container = document.getElementById("painelSolicitacoesUrgentesContainer");
+    if (!container) return;
+
+    const hojeAno = hoje.getFullYear();
+    const hojeMes = hoje.getMonth();
+
+    const urgentes = solicitacoes.filter(s => {
+      if (s.status === "concluida") return false;
+      const [ano, mes, dia] = s.prazo.split("-").map(Number);
+      const prazoData = new Date(ano, mes - 1, dia);
+      const jaAtrasada = prazoData < hojeSemHora;
+      const venceEsteMes = ano === hojeAno && (mes - 1) === hojeMes;
+      return jaAtrasada || venceEsteMes;
+    }).sort((a, b) => a.prazo.localeCompare(b.prazo));
+
+    if (urgentes.length === 0){
+      container.innerHTML = "";
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="painel-solicitacoes-urgentes">
+        <h3 class="card-title">⚠️ Solicitações atrasadas ou vencendo este mês</h3>
+        ${urgentes.map(s => {
+          const empresa = empresas.find(e => e.id === s.empresaId);
+          const status = calcularStatusPrazo(s.prazo, s.status);
+          return `
+            <div class="solicitacao-urgente-linha">
+              <div>
+                <div class="solicitacao-urgente-titulo">${escapeHtml(s.titulo)}</div>
+                <div class="solicitacao-urgente-empresa">${empresa ? escapeHtml(empresa.razaoSocial) : "—"} · Prazo: ${formatarDataBR(s.prazo)}</div>
+              </div>
+              <span class="check-status ${status.classe}">${status.texto}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
   function abrirModalFuncionario(id){
     const form = document.getElementById("formFuncionario");
     form.reset();
@@ -2458,6 +2573,7 @@
     renderizarObrigacoes();
     atualizarPainel();
     renderizarCalendario();
+    atualizarHistoricoDesempenho();
   }
 
   // ---------- MAPEAMENTO DE DADOS (Supabase <-> app) ----------
@@ -3094,6 +3210,71 @@
     `;
   }
 
+  async function carregarHistoricoDesempenho(){
+    const mesesAlvo = [];
+    for (let i = 5; i >= 0; i--){
+      let m = currentViewDate.month - i;
+      let a = currentViewDate.year;
+      while (m < 0){ m += 12; a -= 1; }
+      mesesAlvo.push({ ano: a, mes: m, chave: `${a}-${m}` });
+    }
+
+    const chaves = mesesAlvo.map(m => m.chave);
+    const { data, error } = await supabaseClient.from("obrigacoes_estado").select("*").in("mes_ano", chaves);
+    if (error){
+      console.error(error);
+      return [];
+    }
+
+    return mesesAlvo.map(({ ano, mes, chave }) => {
+      let total = 0, concluidas = 0;
+      empresas.filter(e => e.ativa).forEach(emp => {
+        obrigacoesConfig.forEach(o => {
+          if (!obrigacaoVigenteNoMes(o, ano, mes)) return;
+          if (!emp.contratos[o.chave]) return;
+          total++;
+          const linha = data.find(r => r.mes_ano === chave && r.empresa_id === emp.id && r.chave === o.chave);
+          if (linha && linha.concluido) concluidas++;
+        });
+      });
+      const percentual = total > 0 ? Math.round((concluidas / total) * 100) : 0;
+      return { ano, mes, percentual, total };
+    });
+  }
+
+  function renderizarHistoricoDesempenho(historico){
+    const container = document.getElementById("historicoDesempenhoContainer");
+    if (!container) return;
+
+    if (!historico || historico.every(h => h.total === 0)){
+      container.innerHTML = `<div class="grafico-vazio">Ainda não há dados suficientes nos meses anteriores.</div>`;
+      return;
+    }
+
+    const ehMesAtual = (h) => h.ano === currentViewDate.year && h.mes === currentViewDate.month;
+
+    container.innerHTML = `
+      <div class="historico-barras">
+        ${historico.map(h => `
+          <div class="historico-coluna">
+            <div class="historico-percentual">${h.total > 0 ? h.percentual + "%" : "—"}</div>
+            <div class="historico-barra ${ehMesAtual(h) ? "mes-atual" : ""}" style="height:${Math.max(h.percentual, 2)}%;"></div>
+            <div class="historico-mes-label">${capitalizarPrimeira(meses[h.mes].slice(0,3))}/${String(h.ano).slice(2)}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function capitalizarPrimeira(s){
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  async function atualizarHistoricoDesempenho(){
+    const historico = await carregarHistoricoDesempenho();
+    renderizarHistoricoDesempenho(historico);
+  }
+
   function calcularResumoSolicitacoes(){
     const emAberto = solicitacoes.filter(s => s.status === "aberto");
     const emAndamento = solicitacoes.filter(s => s.status === "andamento");
@@ -3283,6 +3464,7 @@
 
     renderizarGraficoObrigacoes();
     renderizarGraficoSolicitacoes();
+    renderizarSolicitacoesUrgentesPainel();
   }
 
   // ---------- RENDER EMPRESAS ----------
@@ -4014,6 +4196,7 @@
     renderizarCalendario();
     renderizarAniversarios();
     renderizarAniversariosPainel();
+    atualizarHistoricoDesempenho();
 
     configurarRealtime();
   }

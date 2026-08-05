@@ -405,6 +405,7 @@
 
         <div class="acoes-form">
           <button type="button" class="btn-secundario" id="btnAddPonto">+ Adicionar empregado(a)</button>
+          <button type="button" class="btn-secundario" id="btnTodosPonto">Selecionar todos</button>
           <button type="button" class="btn-primario" id="btnGerarPonto">Gerar e imprimir</button>
         </div>
       </div>
@@ -450,6 +451,7 @@
 
         <div class="acoes-form">
           <button type="button" class="btn-secundario" id="btnAddVt">+ Adicionar empregado(a)</button>
+          <button type="button" class="btn-secundario" id="btnTodosVt">Selecionar todos</button>
           <button type="button" class="btn-primario" id="btnGerarVt">Gerar e imprimir</button>
         </div>
       </div>
@@ -491,6 +493,7 @@
 
         <div class="acoes-form">
           <button type="button" class="btn-secundario" id="btnAddAd">+ Adicionar empregado(a)</button>
+          <button type="button" class="btn-secundario" id="btnTodosAd">Selecionar todos</button>
           <button type="button" class="btn-primario" id="btnGerarAd">Gerar e imprimir</button>
         </div>
       </div>
@@ -1080,6 +1083,38 @@
   });
   document.getElementById("btnAddAd").addEventListener("click", () => {
     document.getElementById("tabelaAdBody").appendChild(criarLinhaAd());
+  });
+
+  // preenche a tabela com uma linha por empregado(a) da empregadora atual, todos já selecionados
+  function preencherTodosEmpregados(tbodyId, criarLinhaFn, selectClass){
+    if (!empregadorAtualId){
+      alert("Escolha uma empregadora primeiro.");
+      return;
+    }
+    const lista = empregados.filter(e => Number(e.empregadorId) === Number(empregadorAtualId));
+    if (lista.length === 0){
+      alert("Essa empregadora ainda não tem empregados cadastrados.");
+      return;
+    }
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = "";
+    lista.forEach(emp => {
+      const tr = criarLinhaFn();
+      tbody.appendChild(tr);
+      const select = tr.querySelector(selectClass);
+      select.value = emp.id;
+      select.dispatchEvent(new Event("change"));
+    });
+  }
+
+  document.getElementById("btnTodosPonto").addEventListener("click", () => {
+    preencherTodosEmpregados("tabelaPontoBody", criarLinhaPonto, ".ponto-empregado");
+  });
+  document.getElementById("btnTodosVt").addEventListener("click", () => {
+    preencherTodosEmpregados("tabelaVtBody", criarLinhaVt, ".vt-empregado");
+  });
+  document.getElementById("btnTodosAd").addEventListener("click", () => {
+    preencherTodosEmpregados("tabelaAdBody", criarLinhaAd, ".ad-empregado");
   });
 
   // ---------- GERAÇÃO: FOLHA DE PONTO ----------
