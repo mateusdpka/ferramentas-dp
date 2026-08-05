@@ -2117,16 +2117,13 @@
     const container = document.getElementById("painelSolicitacoesUrgentesContainer");
     if (!container) return;
 
-    const hojeAno = hoje.getFullYear();
-    const hojeMes = hoje.getMonth();
-
     const urgentes = solicitacoes.filter(s => {
       if (s.status === "concluida") return false;
       const [ano, mes, dia] = s.prazo.split("-").map(Number);
       const prazoData = new Date(ano, mes - 1, dia);
       const jaAtrasada = prazoData < hojeSemHora;
-      const venceEsteMes = ano === hojeAno && (mes - 1) === hojeMes;
-      return jaAtrasada || venceEsteMes;
+      const venceNoMesNavegado = ano === currentViewDate.year && (mes - 1) === currentViewDate.month;
+      return jaAtrasada || venceNoMesNavegado;
     }).sort((a, b) => a.prazo.localeCompare(b.prazo));
 
     if (urgentes.length === 0){
@@ -2136,7 +2133,7 @@
 
     container.innerHTML = `
       <div class="painel-solicitacoes-urgentes">
-        <h3 class="card-title">⚠️ Solicitações atrasadas ou vencendo este mês</h3>
+        <h3 class="card-title">⚠️ Solicitações atrasadas ou vencendo em ${capitalizarPrimeira(meses[currentViewDate.month])}/${currentViewDate.year}</h3>
         ${urgentes.map(s => {
           const empresa = empresas.find(e => e.id === s.empresaId);
           const status = calcularStatusPrazo(s.prazo, s.status);
