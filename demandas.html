@@ -2089,24 +2089,42 @@
     }).join("");
   }
 
+  function listaAniversariantesDoMes(){
+    const mesAtual = hoje.getMonth();
+    return funcionarios
+      .map(f => {
+        const [anoNasc, mesNasc, diaNasc] = f.dataNascimento.split("-").map(Number);
+        const dataEsteAno = new Date(hoje.getFullYear(), mesNasc - 1, diaNasc);
+        const diasRestantes = diffDiasParaHoje(dataEsteAno);
+        const idadeCompletando = hoje.getFullYear() - anoNasc;
+        return { ...f, mesNascIndex: mesNasc - 1, diaNasc, diasRestantes, idadeCompletando };
+      })
+      .filter(f => f.mesNascIndex === mesAtual)
+      .sort((a, b) => a.diaNasc - b.diaNasc);
+  }
+
   function renderizarAniversariosPainel(){
     const container = document.getElementById("painelAniversariosContainer");
     if (!container) return;
-    const proximos = listaFuncionariosOrdenadaPorProximoAniversario()
-      .filter(f => f.proximo.diasRestantes <= 7);
+    const doMes = listaAniversariantesDoMes();
 
-    if (proximos.length === 0){
+    if (doMes.length === 0){
       container.innerHTML = "";
       return;
     }
 
     container.innerHTML = `
       <div class="painel-aniversarios">
-        <h3 class="card-title" style="margin-bottom:10px;">Aniversários próximos</h3>
-        ${proximos.map(f => {
-          const texto = f.proximo.diasRestantes === 0
-            ? `🎂 ${escapeHtml(f.nome)} faz aniversário hoje! (completa ${f.proximo.idadeCompletando})`
-            : `🎂 ${escapeHtml(f.nome)} faz aniversário em ${f.proximo.diasRestantes} dia${f.proximo.diasRestantes > 1 ? "s" : ""} (${formatarDataCurta(f.proximo.data)})`;
+        <h3 class="card-title" style="margin-bottom:10px;">Aniversariantes de ${capitalizarPrimeira(meses[hoje.getMonth()])}</h3>
+        ${doMes.map(f => {
+          let texto;
+          if (f.diasRestantes === 0){
+            texto = `🎂 ${escapeHtml(f.nome)} faz aniversário hoje! (completa ${f.idadeCompletando})`;
+          } else if (f.diasRestantes > 0){
+            texto = `🎂 ${escapeHtml(f.nome)} faz aniversário em ${f.diasRestantes} dia${f.diasRestantes > 1 ? "s" : ""} (dia ${String(f.diaNasc).padStart(2,"0")})`;
+          } else {
+            texto = `🎂 ${escapeHtml(f.nome)} fez aniversário dia ${String(f.diaNasc).padStart(2,"0")} (completou ${f.idadeCompletando})`;
+          }
           return `<div class="painel-aniversario-linha">${texto}</div>`;
         }).join("")}
       </div>
