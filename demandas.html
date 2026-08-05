@@ -2090,16 +2090,17 @@
   }
 
   function listaAniversariantesDoMes(){
-    const mesAtual = hoje.getMonth();
+    const mesRef = currentViewDate.month;
+    const anoRef = currentViewDate.year;
     return funcionarios
       .map(f => {
         const [anoNasc, mesNasc, diaNasc] = f.dataNascimento.split("-").map(Number);
-        const dataEsteAno = new Date(hoje.getFullYear(), mesNasc - 1, diaNasc);
-        const diasRestantes = diffDiasParaHoje(dataEsteAno);
-        const idadeCompletando = hoje.getFullYear() - anoNasc;
+        const dataNoAnoRef = new Date(anoRef, mesNasc - 1, diaNasc);
+        const diasRestantes = diffDiasParaHoje(dataNoAnoRef);
+        const idadeCompletando = anoRef - anoNasc;
         return { ...f, mesNascIndex: mesNasc - 1, diaNasc, diasRestantes, idadeCompletando };
       })
-      .filter(f => f.mesNascIndex === mesAtual)
+      .filter(f => f.mesNascIndex === mesRef)
       .sort((a, b) => a.diaNasc - b.diaNasc);
   }
 
@@ -2115,7 +2116,7 @@
 
     container.innerHTML = `
       <div class="painel-aniversarios">
-        <h3 class="card-title" style="margin-bottom:10px;">Aniversariantes de ${capitalizarPrimeira(meses[hoje.getMonth()])}</h3>
+        <h3 class="card-title" style="margin-bottom:10px;">Aniversariantes de ${capitalizarPrimeira(meses[currentViewDate.month])}/${currentViewDate.year}</h3>
         ${doMes.map(f => {
           let texto;
           if (f.diasRestantes === 0){
@@ -2589,6 +2590,7 @@
     atualizarPainel();
     renderizarCalendario();
     atualizarHistoricoDesempenho();
+    renderizarAniversariosPainel();
   }
 
   // ---------- MAPEAMENTO DE DADOS (Supabase <-> app) ----------
