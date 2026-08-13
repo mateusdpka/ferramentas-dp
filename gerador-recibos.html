@@ -539,6 +539,11 @@
           <label for="campoEmpregadoCargo">Cargo</label>
           <input type="text" id="campoEmpregadoCargo" value="EMPREGADA - DOMÉSTICA">
         </div>
+        <div class="form-group">
+          <label for="campoEmpregadoSalario">Salário (R$, opcional)</label>
+          <input type="text" id="campoEmpregadoSalario" placeholder="Ex: 1518,00">
+          <div class="form-hint">Usado pra sugerir automaticamente 40% no recibo de Adiantamento.</div>
+        </div>
         <div class="acoes-form">
           <button type="button" class="btn-secundario" id="btnCancelarEmpregado">Cancelar</button>
           <button type="submit" class="btn-primario">Salvar</button>
@@ -775,7 +780,7 @@
     return { id: row.id, nome: row.nome, cpfCnpj: row.cpf_cnpj || "" };
   }
   function mapEmpregadoDb(row){
-    return { id: row.id, empregadorId: row.empregador_id, nome: row.nome, cpf: row.cpf || "", cargo: row.cargo || "EMPREGADA - DOMÉSTICA" };
+    return { id: row.id, empregadorId: row.empregador_id, nome: row.nome, cpf: row.cpf || "", cargo: row.cargo || "EMPREGADA - DOMÉSTICA", salario: row.salario != null ? Number(row.salario) : null };
   }
 
   async function carregarEmpregadores(){
@@ -894,6 +899,7 @@
       document.getElementById("campoEmpregadoNome").value = emp.nome;
       document.getElementById("campoEmpregadoCpf").value = emp.cpf;
       document.getElementById("campoEmpregadoCargo").value = emp.cargo;
+      document.getElementById("campoEmpregadoSalario").value = emp.salario != null ? formatarReais(emp.salario) : "";
     } else {
       empregadoEmEdicaoId = null;
       document.getElementById("modalEmpregadoTitulo").textContent = "Novo empregado(a)";
@@ -911,16 +917,18 @@
     const nome = document.getElementById("campoEmpregadoNome").value.trim();
     const cpf = document.getElementById("campoEmpregadoCpf").value.trim();
     const cargo = document.getElementById("campoEmpregadoCargo").value.trim() || "EMPREGADA - DOMÉSTICA";
+    const salarioStr = document.getElementById("campoEmpregadoSalario").value.trim();
+    const salario = salarioStr ? parseValorBR(salarioStr) : null;
     if (!nome) return;
 
     let idSalvo = empregadoEmEdicaoId;
     if (empregadoEmEdicaoId){
       const { error } = await supabaseClient.from("empregados_domesticos")
-        .update({ nome, cpf: cpf || null, cargo }).eq("id", empregadoEmEdicaoId);
+        .update({ nome, cpf: cpf || null, cargo, salario }).eq("id", empregadoEmEdicaoId);
       if (error){ alert("Não foi possível salvar."); return; }
     } else {
       const { data, error } = await supabaseClient.from("empregados_domesticos")
-        .insert({ empregador_id: empregadorAtualId, nome, cpf: cpf || null, cargo })
+        .insert({ empregador_id: empregadorAtualId, nome, cpf: cpf || null, cargo, salario })
         .select().single();
       if (error){ alert("Não foi possível salvar."); return; }
       idSalvo = data.id;
@@ -954,7 +962,7 @@
       <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--borda);">
         <div>
           <div style="font-weight:700; font-size:13.5px;">${escapeHtml(e.nome)}</div>
-          <div style="font-size:12px; color:var(--texto-suave);">${e.cpf ? escapeHtml(e.cpf) + " · " : ""}${escapeHtml(e.cargo)}</div>
+          <div style="font-size:12px; color:var(--texto-suave);">${e.cpf ? escapeHtml(e.cpf) + " · " : ""}${escapeHtml(e.cargo)}${e.salario ? " · R$ " + formatarReais(e.salario) : ""}</div>
         </div>
         <div style="display:flex; gap:6px; flex-shrink:0;">
           <button type="button" class="btn-secundario" onclick="editarEmpregadoDaLista(${e.id})">Editar</button>
@@ -1063,10 +1071,26 @@
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><select class="ad-empregado"></select></td>
-      <td><input type="text" class="ad-valor" placeholder="Ex: 648,40"></td>
+      <td>
+        <input type="text" class="ad-valor" placeholder="Ex: 648,40">
+        <div class="ad-valor-hint" style="font-size:11px; color:var(--texto-suave); margin-top:3px;"></div>
+      </td>
       <td class="col-acao"><button type="button" class="btn-remover-linha" title="Remover">✕</button></td>
     `;
-    ligarSelectDeEmpregado(tr.querySelector(".ad-empregado"));
+    const selectEmpregado = tr.querySelector(".ad-empregado");
+    const campoValor = tr.querySelector(".ad-valor");
+    const hint = tr.querySelector(".ad-valor-hint");
+    ligarSelectDeEmpregado(selectEmpregado);
+    selectEmpregado.addEventListener("change", () => {
+      const emp = empregados.find(e => String(e.id) === selectEmpregado.value);
+      if (emp && emp.salario){
+        const quarentaPorcento = emp.salario * 0.4;
+        campoValor.value = formatarReais(quarentaPorcento);
+        hint.textContent = `40% do salário (R$ ${formatarReais(emp.salario)})`;
+      } else {
+        hint.textContent = emp ? "Sem salário cadastrado — edite o empregado pra sugerir automaticamente." : "";
+      }
+    });
     tr.querySelector(".btn-remover-linha").addEventListener("click", () => tr.remove());
     return tr;
   }
