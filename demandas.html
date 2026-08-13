@@ -1221,6 +1221,17 @@
     white-space: nowrap;
   }
 
+  .th-ordenavel{
+    cursor: pointer;
+    user-select: none;
+  }
+  .th-ordenavel:hover{ color: var(--marca-dourado); }
+  .seta-ordenacao{
+    display:inline-block;
+    font-size: 10px;
+    margin-left: 2px;
+  }
+
   table.solicitacoes-table td{
     padding: 12px;
     border-bottom: 1px solid var(--borda);
@@ -1606,7 +1617,7 @@
                 <tr>
                   <th>Título</th>
                   <th>Empresa</th>
-                  <th>Prazo</th>
+                  <th class="th-ordenavel" id="thOrdenarPrazo">Prazo <span class="seta-ordenacao" id="setaOrdenarPrazo"></span></th>
                   <th>Prioridade</th>
                   <th>Status</th>
                   <th>Ações</th>
@@ -4010,6 +4021,19 @@
     });
   });
 
+  // null = ordem padrão (mais recente cadastrada primeiro); "asc" = prazo mais próximo primeiro; "desc" = mais distante primeiro
+  let ordenacaoPrazo = null;
+  const thOrdenarPrazo = document.getElementById("thOrdenarPrazo");
+  thOrdenarPrazo.addEventListener("click", () => {
+    if (ordenacaoPrazo === null) ordenacaoPrazo = "asc";
+    else if (ordenacaoPrazo === "asc") ordenacaoPrazo = "desc";
+    else ordenacaoPrazo = null;
+
+    const seta = document.getElementById("setaOrdenarPrazo");
+    seta.textContent = ordenacaoPrazo === "asc" ? "▲" : ordenacaoPrazo === "desc" ? "▼" : "";
+    renderizarSolicitacoes();
+  });
+
   // decide se uma solicitação bate com o filtro de urgência de prazo escolhido
   function solicitacaoBateFiltroPrazo(s){
     if (filtroPrazoSolicitacao === "todos") return true;
@@ -4062,6 +4086,13 @@
       (filtroPrioridadeSolicitacao === "todas" || s.prioridade === filtroPrioridadeSolicitacao) &&
       solicitacaoBateFiltroPrazo(s)
     );
+
+    if (ordenacaoPrazo){
+      filtradas.sort((a, b) => {
+        const cmp = a.prazo.localeCompare(b.prazo);
+        return ordenacaoPrazo === "asc" ? cmp : -cmp;
+      });
+    }
 
     if (filtradas.length === 0){
       tbodySol.innerHTML = "";
