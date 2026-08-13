@@ -1587,6 +1587,18 @@
             <button class="filtro-btn" data-filtro="andamento">Em andamento</button>
             <button class="filtro-btn" data-filtro="concluida">Concluídas</button>
           </div>
+          <div class="filtros-status" id="filtrosPrazoSolicitacao">
+            <button class="filtro-btn active" data-filtro-prazo="todos">Qualquer prazo</button>
+            <button class="filtro-btn" data-filtro-prazo="atrasadas">Atrasadas</button>
+            <button class="filtro-btn" data-filtro-prazo="vencendo">Vencendo em breve</button>
+            <button class="filtro-btn" data-filtro-prazo="semurgencia">Sem urgência</button>
+          </div>
+          <div class="filtros-status" id="filtrosPrioridadeSolicitacao">
+            <button class="filtro-btn active" data-filtro-prioridade="todas">Qualquer prioridade</button>
+            <button class="filtro-btn" data-filtro-prioridade="alta">Alta</button>
+            <button class="filtro-btn" data-filtro-prioridade="media">Média</button>
+            <button class="filtro-btn" data-filtro-prioridade="baixa">Baixa</button>
+          </div>
 
           <div class="table-wrap">
             <table class="solicitacoes-table">
@@ -3969,14 +3981,47 @@
     registrarAtividade("solicitacao", `Solicitação "${dadosForm.titulo}" ${solicitacaoEmEdicaoId ? "editada" : "criada"}`);
   });
 
-  document.querySelectorAll(".filtro-btn").forEach(btn => {
+  document.querySelectorAll("#filtrosStatus .filtro-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".filtro-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll("#filtrosStatus .filtro-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
       filtroAtual = btn.dataset.filtro;
       renderizarSolicitacoes();
     });
   });
+
+  let filtroPrazoSolicitacao = "todos";
+  document.querySelectorAll("#filtrosPrazoSolicitacao .filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filtrosPrazoSolicitacao .filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroPrazoSolicitacao = btn.dataset.filtroPrazo;
+      renderizarSolicitacoes();
+    });
+  });
+
+  let filtroPrioridadeSolicitacao = "todas";
+  document.querySelectorAll("#filtrosPrioridadeSolicitacao .filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filtrosPrioridadeSolicitacao .filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroPrioridadeSolicitacao = btn.dataset.filtroPrioridade;
+      renderizarSolicitacoes();
+    });
+  });
+
+  // decide se uma solicitação bate com o filtro de urgência de prazo escolhido
+  function solicitacaoBateFiltroPrazo(s){
+    if (filtroPrazoSolicitacao === "todos") return true;
+    if (s.status === "concluida") return false;
+    const [ano, mes, dia] = s.prazo.split("-").map(Number);
+    const prazoData = new Date(ano, mes - 1, dia);
+    const diff = Math.round((prazoData - hojeSemHora) / (1000 * 60 * 60 * 24));
+    if (filtroPrazoSolicitacao === "atrasadas") return diff < 0;
+    if (filtroPrazoSolicitacao === "vencendo") return diff >= 0 && diff <= 2;
+    if (filtroPrazoSolicitacao === "semurgencia") return diff > 2;
+    return true;
+  }
 
   function calcularStatusPrazo(prazoStr, status){
     if (status === "concluida"){
@@ -4012,7 +4057,11 @@
     const tbodySol = document.getElementById("tabelaSolicitacoesBody");
     const vazio = document.getElementById("solicitacoesVazio");
 
-    const filtradas = solicitacoes.filter(s => filtroAtual === "todas" || s.status === filtroAtual);
+    const filtradas = solicitacoes.filter(s =>
+      (filtroAtual === "todas" || s.status === filtroAtual) &&
+      (filtroPrioridadeSolicitacao === "todas" || s.prioridade === filtroPrioridadeSolicitacao) &&
+      solicitacaoBateFiltroPrazo(s)
+    );
 
     if (filtradas.length === 0){
       tbodySol.innerHTML = "";
