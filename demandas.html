@@ -686,6 +686,27 @@
     text-align:center;
   }
 
+  .cid-ranking-linha{
+    display:flex;
+    align-items:center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--borda);
+  }
+  .cid-ranking-linha:last-child{ border-bottom:none; }
+  .cid-ranking-codigo{ font-weight:700; font-size: 13.5px; width: 70px; flex-shrink:0; }
+  .cid-ranking-descricao{ font-size:12.5px; color:var(--texto-suave); flex:1; }
+  .cid-ranking-barra-fundo{ flex:2; background: var(--fundo); border-radius:6px; height:10px; overflow:hidden; }
+  .cid-ranking-barra{ height:100%; background: var(--marca-dourado); border-radius:6px; }
+  .cid-ranking-qtd{ font-weight:700; font-size:13px; width:34px; text-align:right; flex-shrink:0; }
+
+  .cid-conferencia-item{
+    border:1px solid var(--borda); border-radius:10px; padding:12px 14px; margin-bottom:10px;
+  }
+  .cid-conferencia-item .nome-arquivo{ font-size:12px; color:var(--texto-suave); margin-bottom:8px; word-break:break-all; }
+  .cid-conferencia-item .grid-2{ margin-bottom:0; }
+  .cid-conferencia-aviso{ font-size:11.5px; color:#8a7300; margin-top:6px; }
+
   .emails-toolbar{
     display:flex;
     align-items:center;
@@ -1436,6 +1457,8 @@
 </head>
 <body>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <!-- TELA DE LOGIN -->
 <div class="login-overlay" id="loginOverlay">
@@ -1476,6 +1499,7 @@
       <button class="menu-item" data-view="calendario"><span class="menu-icon"></span>Calendário</button>
       <button class="menu-item" data-view="atividade"><span class="menu-icon"></span>Atividade</button>
       <button class="menu-item" data-view="aniversarios"><span class="menu-icon"></span>Aniversários</button>
+      <button class="menu-item" data-view="cid"><span class="menu-icon"></span>Controle de CID</button>
       <button class="menu-item" data-view="perfil"><span class="menu-icon"></span>Meu Perfil</button>
     </nav>
     <div class="sidebar-rodape">
@@ -1840,6 +1864,69 @@
         </div>
       </section>
 
+      <!-- CONTROLE DE CID -->
+      <section class="view" id="view-cid">
+        <div class="card">
+          <h3 class="card-title">Controle de CID</h3>
+          <p class="card-sub">Estatística de CIDs em atestados — só pra ver quais aparecem mais e quais menos, sem vincular a nenhum funcionário. Disponível por enquanto só pros grupos que estão sendo testados.</p>
+          <div class="grid-2">
+            <div class="form-group">
+              <label for="cidFiltroGrupo">Grupo empresarial</label>
+              <select id="cidFiltroGrupo"></select>
+            </div>
+            <div class="form-group">
+              <label for="cidFiltroFilial">Filial</label>
+              <select id="cidFiltroFilial">
+                <option value="geral">Geral (todas as filiais)</option>
+              </select>
+            </div>
+          </div>
+          <div class="filtros-status" id="filtrosPeriodoCid">
+            <button class="filtro-btn active" data-periodo="todos">Todo o período</button>
+            <button class="filtro-btn" data-periodo="3meses">Últimos 3 meses</button>
+            <button class="filtro-btn" data-periodo="esteano">Este ano</button>
+            <button class="filtro-btn" data-periodo="personalizado">Personalizado</button>
+          </div>
+          <div class="grid-2" id="cidPeriodoPersonalizado" style="display:none;">
+            <div class="form-group">
+              <label for="cidDataInicio">De</label>
+              <input type="date" id="cidDataInicio">
+            </div>
+            <div class="form-group">
+              <label for="cidDataFim">Até</label>
+              <input type="date" id="cidDataFim">
+            </div>
+          </div>
+          <div class="acoes-form">
+            <button type="button" class="btn-primario" id="btnCidUpload">+ Adicionar atestados</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">Ranking de CIDs</h3>
+          <div id="cidRankingContainer"></div>
+          <div class="empty-state" id="cidRankingVazio" style="display:none;">Nenhum atestado registrado ainda nesse filtro.</div>
+        </div>
+      </section>
+
+      <!-- MODAL UPLOAD DE ATESTADOS (CID) -->
+      <div class="modal-overlay" id="modalCidOverlay">
+        <div class="modal-box" style="max-width:560px;">
+          <h3 class="card-title">Adicionar atestados</h3>
+          <p class="card-sub">Escolha um ou mais arquivos (PDF, JPEG ou PNG). O sistema tenta ler o CID de cada um — confira antes de salvar.</p>
+          <div class="form-group">
+            <label for="cidInputArquivos">Arquivos (PDF, JPEG ou PNG)</label>
+            <input type="file" id="cidInputArquivos" accept="application/pdf,image/jpeg,image/png,image/jpg" multiple>
+          </div>
+          <button type="button" class="btn-secundario" id="btnCidLerArquivos">Ler arquivos</button>
+          <div id="cidListaConferencia" style="margin-top:16px;"></div>
+          <div class="modal-acoes">
+            <button type="button" class="btn-secundario" id="btnCidCancelar">Cancelar</button>
+            <button type="button" class="btn-primario" id="btnCidSalvarTodos" style="display:none;">Salvar todos</button>
+          </div>
+        </div>
+      </div>
+
       <!-- MEU PERFIL -->
       <section class="view" id="view-perfil">
         <div class="card" style="max-width:420px;">
@@ -1993,7 +2080,8 @@
     empresa: "Empresa",
     solicitacao: "Solicitação",
     email: "E-mail",
-    funcionario: "Funcionário"
+    funcionario: "Funcionário",
+    cid: "Controle de CID"
   };
 
   function formatarDataHoraCompleta(isoString){
@@ -2749,6 +2837,7 @@
     calendario: "Calendário",
     atividade: "Atividade",
     aniversarios: "Aniversários",
+    cid: "Controle de CID",
     perfil: "Meu Perfil"
   };
 
@@ -3665,6 +3754,8 @@
         grupos.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join("");
       if (grupos.includes(valorAtual)) select.value = valorAtual;
     });
+
+    if (document.getElementById("cidFiltroGrupo")) popularFiltroGrupoCid();
   }
 
   async function recarregarTudoAposMudarEmpresas(){
@@ -4295,6 +4386,10 @@
     renderizarAniversariosPainel();
     atualizarHistoricoDesempenho();
 
+    await carregarAtestadosCid();
+    popularFiltroGrupoCid();
+    renderizarRankingCid();
+
     configurarRealtime();
   }
 
@@ -4347,7 +4442,348 @@
     }
   }
 
+  // ---------- CONTROLE DE CID ----------
+  const GRUPOS_CID_HABILITADOS = ["C DE QUEIROZ", "J DE SOUZA SAID"];
+
+  // Lista curada dos CIDs mais comuns em atestados de afastamento no Brasil.
+  // Não é a tabela oficial completa do DATASUS (14 mil códigos) — só os mais frequentes.
+  // Código fora dessa lista aparece no ranking sem descrição, nunca com descrição inventada.
+  const CID_DESCRICOES = {
+    "A09": "Diarreia e gastroenterite de origem infecciosa",
+    "A90": "Dengue clássico",
+    "B34": "Infecção viral não especificada",
+    "E11": "Diabetes mellitus não insulino-dependente",
+    "F32": "Episódio depressivo",
+    "F33": "Transtorno depressivo recorrente",
+    "F41": "Outros transtornos ansiosos",
+    "F43": "Reação a estresse grave e transtornos de adaptação",
+    "G43": "Enxaqueca",
+    "G44": "Outras síndromes de cefaleia",
+    "H10": "Conjuntivite",
+    "I10": "Hipertensão essencial (primária)",
+    "J00": "Nasofaringite aguda (resfriado comum)",
+    "J01": "Sinusite aguda",
+    "J02": "Faringite aguda",
+    "J03": "Amigdalite aguda",
+    "J06": "Infecção aguda das vias aéreas superiores",
+    "J11": "Influenza (gripe)",
+    "J20": "Bronquite aguda",
+    "J45": "Asma",
+    "K29": "Gastrite e duodenite",
+    "K30": "Dispepsia",
+    "K52": "Outras gastroenterites e colites não infecciosas",
+    "K59": "Outros transtornos funcionais do intestino",
+    "M25": "Outros transtornos articulares",
+    "M54": "Dorsalgia",
+    "M75": "Lesões do ombro",
+    "M79": "Outros transtornos dos tecidos moles",
+    "N39": "Outros transtornos do trato urinário",
+    "R10": "Dor abdominal e pélvica",
+    "R51": "Cefaleia",
+    "R53": "Mal-estar e fadiga",
+    "S93": "Entorse e distensão do tornozelo e pé",
+    "Z76": "Pessoa em contato com serviços de saúde em outras circunstâncias"
+  };
+
+  function descricaoCid(codigo){
+    if (!codigo) return "";
+    const categoria = codigo.trim().toUpperCase().slice(0, 3);
+    return CID_DESCRICOES[categoria] || "";
+  }
+
+  let atestadosCid = [];
+
+  async function carregarAtestadosCid(){
+    const { data, error } = await supabaseClient.from("atestados_cid").select("*");
+    if (error){ console.error(error); return; }
+    atestadosCid = data || [];
+  }
+
+  function popularFiltroGrupoCid(){
+    const select = document.getElementById("cidFiltroGrupo");
+    const gruposExistentes = new Set(empresas.map(e => e.grupoEmpresarial).filter(Boolean));
+    const gruposHabilitados = GRUPOS_CID_HABILITADOS.filter(g => gruposExistentes.has(g));
+    const valorAtual = select.value;
+    select.innerHTML = gruposHabilitados.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join("");
+    if (gruposHabilitados.includes(valorAtual)) select.value = valorAtual;
+    popularFiltroFilialCid();
+  }
+
+  function popularFiltroFilialCid(){
+    const grupo = document.getElementById("cidFiltroGrupo").value;
+    const select = document.getElementById("cidFiltroFilial");
+    const filiais = empresas.filter(e => e.grupoEmpresarial === grupo).sort((a, b) => a.razaoSocial.localeCompare(b.razaoSocial));
+    const valorAtual = select.value;
+    select.innerHTML = '<option value="geral">Geral (todas as filiais)</option>' +
+      filiais.map(e => `<option value="${e.id}">${escapeHtml(e.razaoSocial)}</option>`).join("");
+    if (valorAtual && [...select.options].some(o => o.value === valorAtual)) select.value = valorAtual;
+  }
+
+  document.getElementById("cidFiltroGrupo").addEventListener("change", () => {
+    popularFiltroFilialCid();
+    renderizarRankingCid();
+  });
+  document.getElementById("cidFiltroFilial").addEventListener("change", renderizarRankingCid);
+
+  let filtroPeriodoCid = "todos";
+
+  function periodoCidBateFiltro(dataAtestadoStr){
+    if (filtroPeriodoCid === "todos") return true;
+    if (!dataAtestadoStr) return false; // sem data não dá pra saber se cai no período escolhido
+
+    const data = new Date(dataAtestadoStr + "T00:00:00");
+    const hojeData = new Date(hojeSemHora);
+
+    if (filtroPeriodoCid === "3meses"){
+      const limite = new Date(hojeData);
+      limite.setMonth(limite.getMonth() - 3);
+      return data >= limite && data <= hojeData;
+    }
+    if (filtroPeriodoCid === "esteano"){
+      return data.getFullYear() === hojeData.getFullYear();
+    }
+    if (filtroPeriodoCid === "personalizado"){
+      const inicioStr = document.getElementById("cidDataInicio").value;
+      const fimStr = document.getElementById("cidDataFim").value;
+      if (inicioStr && data < new Date(inicioStr + "T00:00:00")) return false;
+      if (fimStr && data > new Date(fimStr + "T00:00:00")) return false;
+      return true;
+    }
+    return true;
+  }
+
+  document.querySelectorAll("#filtrosPeriodoCid .filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filtrosPeriodoCid .filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroPeriodoCid = btn.dataset.periodo;
+      document.getElementById("cidPeriodoPersonalizado").style.display = filtroPeriodoCid === "personalizado" ? "grid" : "none";
+      renderizarRankingCid();
+    });
+  });
+  document.getElementById("cidDataInicio").addEventListener("change", renderizarRankingCid);
+  document.getElementById("cidDataFim").addEventListener("change", renderizarRankingCid);
+
+  function renderizarRankingCid(){
+    const grupo = document.getElementById("cidFiltroGrupo").value;
+    const filial = document.getElementById("cidFiltroFilial").value;
+    const container = document.getElementById("cidRankingContainer");
+    const vazio = document.getElementById("cidRankingVazio");
+
+    const idsDoGrupo = new Set(empresas.filter(e => e.grupoEmpresarial === grupo).map(e => e.id));
+    const filtrados = atestadosCid.filter(a => {
+      const bateEmpresa = filial === "geral" ? idsDoGrupo.has(a.empresa_id) : a.empresa_id === filial;
+      return bateEmpresa && periodoCidBateFiltro(a.data_atestado);
+    });
+
+    if (filtrados.length === 0){
+      container.innerHTML = "";
+      vazio.style.display = "block";
+      return;
+    }
+    vazio.style.display = "none";
+
+    const contagem = {};
+    filtrados.forEach(a => {
+      const cod = (a.cid_codigo || "").trim().toUpperCase();
+      contagem[cod] = (contagem[cod] || 0) + 1;
+    });
+    const ranking = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+    const maiorQtd = ranking[0][1];
+
+    container.innerHTML = ranking.map(([codigo, qtd]) => `
+      <div class="cid-ranking-linha">
+        <div class="cid-ranking-codigo">${escapeHtml(codigo)}</div>
+        <div class="cid-ranking-descricao">${escapeHtml(descricaoCid(codigo) || "Descrição não catalogada")}</div>
+        <div class="cid-ranking-barra-fundo"><div class="cid-ranking-barra" style="width:${Math.round((qtd / maiorQtd) * 100)}%;"></div></div>
+        <div class="cid-ranking-qtd">${qtd}</div>
+      </div>
+    `).join("");
+  }
+
+  // ---- modal de upload/leitura ----
+  const modalCidOverlay = document.getElementById("modalCidOverlay");
+
+  document.getElementById("btnCidUpload").addEventListener("click", () => {
+    const filial = document.getElementById("cidFiltroFilial").value;
+    if (filial === "geral"){
+      alert("Escolha uma filial específica antes de adicionar atestados (o \"Geral\" é só pra visualizar o total do grupo).");
+      return;
+    }
+    document.getElementById("cidInputArquivos").value = "";
+    document.getElementById("cidListaConferencia").innerHTML = "";
+    document.getElementById("btnCidSalvarTodos").style.display = "none";
+    modalCidOverlay.classList.add("active");
+  });
+
+  document.getElementById("btnCidCancelar").addEventListener("click", () => {
+    modalCidOverlay.classList.remove("active");
+  });
+  modalCidOverlay.addEventListener("click", (e) => {
+    if (e.target === modalCidOverlay) modalCidOverlay.classList.remove("active");
+  });
+
+  function extrairCidDoTexto(texto){
+    function montarCodigo(m, temDecimal){
+      if (!m) return "";
+      const letra = m[1].toUpperCase();
+      const d1 = m[2], d2 = m[3];
+      const decimal = temDecimal ? m[4] : null;
+      return letra + d1 + d2 + (decimal ? "." + decimal : "");
+    }
+
+    // perto da palavra "CID": tolera espaços extras entre TODOS os caracteres (inclusive
+    // dentro da própria palavra "CID" e entre os dígitos) e vírgula no lugar do ponto —
+    // artefatos comuns quando a leitura vem de OCR (imagem/scan)
+    const comRotulo = texto.match(/C\s*I\s*D[\s\-:]*([A-TV-Z])\s*(\d)\s*(\d)(?:\s*[.,]\s*(\d))?/i);
+    if (comRotulo) return montarCodigo(comRotulo, true);
+
+    // sem o rótulo "CID" por perto: exige o formato com separador decimal,
+    // pra reduzir a chance de pegar um número qualquer do texto por engano
+    const comPonto = texto.match(/\b([A-TV-Z])\s*(\d)\s*(\d)\s*[.,]\s*(\d)\b/);
+    if (comPonto) return montarCodigo(comPonto, true);
+
+    const semPonto = texto.match(/\b([A-TV-Z])(\d)(\d)\b/);
+    if (semPonto) return montarCodigo(semPonto, false);
+
+    return "";
+  }
+
+  function extrairDataDoTexto(texto){
+    const m = texto.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if (!m) return "";
+    return `${m[3]}-${m[2]}-${m[1]}`;
+  }
+
+  async function extrairTextoDoArquivo(arquivo){
+    const ehImagem = arquivo.type.startsWith("image/");
+
+    if (ehImagem){
+      // Foto/print do atestado — vai direto pro OCR, sem passar pelo pdf.js
+      try {
+        const resultadoOcr = await Tesseract.recognize(arquivo, "por");
+        return { texto: resultadoOcr.data.text, viaOcr: true };
+      } catch (err){
+        console.error(err);
+        return { texto: "", viaOcr: true };
+      }
+    }
+
+    const buffer = await arquivo.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    let textoTotal = "";
+    for (let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const conteudo = await page.getTextContent();
+      textoTotal += conteudo.items.map(it => it.str).join(" ") + " ";
+    }
+
+    if (textoTotal.trim().length > 20){
+      return { texto: textoTotal, viaOcr: false };
+    }
+
+    // Provavelmente é um PDF escaneado (sem texto embutido) — tenta ler por OCR
+    try {
+      const primeiraPagina = await pdf.getPage(1);
+      const viewport = primeiraPagina.getViewport({ scale: 2 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext("2d");
+      await primeiraPagina.render({ canvasContext: ctx, viewport }).promise;
+
+      const resultadoOcr = await Tesseract.recognize(canvas, "por");
+      return { texto: resultadoOcr.data.text, viaOcr: true };
+    } catch (err){
+      console.error(err);
+      return { texto: "", viaOcr: true };
+    }
+  }
+
+  document.getElementById("btnCidLerArquivos").addEventListener("click", async () => {
+    const arquivos = [...document.getElementById("cidInputArquivos").files];
+    if (arquivos.length === 0){
+      alert("Escolha ao menos um arquivo PDF.");
+      return;
+    }
+    const container = document.getElementById("cidListaConferencia");
+
+    const itens = [];
+    for (let i = 0; i < arquivos.length; i++){
+      const arquivo = arquivos[i];
+      container.innerHTML = `Lendo arquivo ${i + 1} de ${arquivos.length} (${escapeHtml(arquivo.name)})... isso pode demorar alguns segundos quando precisa de leitura por imagem.`;
+      let cidDetectado = "", dataDetectada = "", conseguiuLer = false, viaOcr = false;
+      try {
+        const resultado = await extrairTextoDoArquivo(arquivo);
+        viaOcr = resultado.viaOcr;
+        if (resultado.texto.trim().length > 20){
+          cidDetectado = extrairCidDoTexto(resultado.texto);
+          dataDetectada = extrairDataDoTexto(resultado.texto);
+          conseguiuLer = true;
+        }
+      } catch (err){
+        console.error(err);
+      }
+      itens.push({ nomeArquivo: arquivo.name, cid: cidDetectado, data: dataDetectada, conseguiuLer, viaOcr });
+    }
+
+    container.innerHTML = itens.map((item, i) => `
+      <div class="cid-conferencia-item">
+        <div class="nome-arquivo">${escapeHtml(item.nomeArquivo)}</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>CID</label>
+            <input type="text" class="cid-conf-codigo" data-idx="${i}" value="${escapeHtml(item.cid)}" placeholder="Ex: J45.9">
+          </div>
+          <div class="form-group">
+            <label>Data do atestado</label>
+            <input type="date" class="cid-conf-data" data-idx="${i}" value="${item.data}">
+          </div>
+        </div>
+        ${!item.conseguiuLer
+          ? `<div class="cid-conferencia-aviso">⚠️ Não foi possível ler automaticamente (nem por texto, nem por imagem) — preencha à mão.</div>`
+          : item.viaOcr
+            ? `<div class="cid-conferencia-aviso">🔎 Lido por reconhecimento de imagem (OCR) — a confiabilidade é menor que num PDF digitado, confira com atenção.</div>`
+            : ""}
+      </div>
+    `).join("");
+
+    document.getElementById("btnCidSalvarTodos").style.display = "inline-block";
+  });
+
+  document.getElementById("btnCidSalvarTodos").addEventListener("click", async () => {
+    const filial = document.getElementById("cidFiltroFilial").value;
+    const codigos = [...document.querySelectorAll(".cid-conf-codigo")];
+    const registros = codigos.map(input => {
+      const idx = input.dataset.idx;
+      const dataInput = document.querySelector(`.cid-conf-data[data-idx="${idx}"]`);
+      return {
+        empresa_id: filial,
+        cid_codigo: input.value.trim().toUpperCase(),
+        data_atestado: dataInput.value || null
+      };
+    }).filter(r => r.cid_codigo);
+
+    if (registros.length === 0){
+      alert("Preencha ao menos um CID antes de salvar.");
+      return;
+    }
+
+    const { error } = await supabaseClient.from("atestados_cid").insert(registros);
+    if (error){
+      console.error(error);
+      mostrarErroGeral("Não foi possível salvar os atestados agora.");
+      return;
+    }
+
+    modalCidOverlay.classList.remove("active");
+    await carregarAtestadosCid();
+    renderizarRankingCid();
+    registrarAtividade("cid", `${registros.length} atestado(s) registrado(s) para ${empresas.find(e => e.id === filial)?.razaoSocial || filial}`);
+  });
+
   verificarSessao();
+
 </script>
 
 </body>
