@@ -1458,6 +1458,7 @@
 <body>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 <!-- TELA DE LOGIN -->
 <div class="login-overlay" id="loginOverlay">
@@ -1880,6 +1881,22 @@
               </select>
             </div>
           </div>
+          <div class="filtros-status" id="filtrosPeriodoCid">
+            <button class="filtro-btn active" data-periodo="todos">Todo o período</button>
+            <button class="filtro-btn" data-periodo="3meses">Últimos 3 meses</button>
+            <button class="filtro-btn" data-periodo="esteano">Este ano</button>
+            <button class="filtro-btn" data-periodo="personalizado">Personalizado</button>
+          </div>
+          <div class="grid-2" id="cidPeriodoPersonalizado" style="display:none;">
+            <div class="form-group">
+              <label for="cidDataInicio">De</label>
+              <input type="date" id="cidDataInicio">
+            </div>
+            <div class="form-group">
+              <label for="cidDataFim">Até</label>
+              <input type="date" id="cidDataFim">
+            </div>
+          </div>
           <div class="acoes-form">
             <button type="button" class="btn-primario" id="btnCidUpload">+ Adicionar atestados</button>
           </div>
@@ -1896,10 +1913,10 @@
       <div class="modal-overlay" id="modalCidOverlay">
         <div class="modal-box" style="max-width:560px;">
           <h3 class="card-title">Adicionar atestados</h3>
-          <p class="card-sub">Escolha um ou mais PDFs. O sistema tenta ler o CID de cada um — confira antes de salvar.</p>
+          <p class="card-sub">Escolha um ou mais arquivos (PDF, JPEG ou PNG). O sistema tenta ler o CID de cada um — confira antes de salvar.</p>
           <div class="form-group">
-            <label for="cidInputArquivos">Arquivos PDF</label>
-            <input type="file" id="cidInputArquivos" accept="application/pdf" multiple>
+            <label for="cidInputArquivos">Arquivos (PDF, JPEG ou PNG)</label>
+            <input type="file" id="cidInputArquivos" accept="application/pdf,image/jpeg,image/png,image/jpg" multiple>
           </div>
           <button type="button" class="btn-secundario" id="btnCidLerArquivos">Ler arquivos</button>
           <div id="cidListaConferencia" style="margin-top:16px;"></div>
@@ -4508,6 +4525,45 @@
   });
   document.getElementById("cidFiltroFilial").addEventListener("change", renderizarRankingCid);
 
+  let filtroPeriodoCid = "todos";
+
+  function periodoCidBateFiltro(dataAtestadoStr){
+    if (filtroPeriodoCid === "todos") return true;
+    if (!dataAtestadoStr) return false; // sem data não dá pra saber se cai no período escolhido
+
+    const data = new Date(dataAtestadoStr + "T00:00:00");
+    const hojeData = new Date(hojeSemHora);
+
+    if (filtroPeriodoCid === "3meses"){
+      const limite = new Date(hojeData);
+      limite.setMonth(limite.getMonth() - 3);
+      return data >= limite && data <= hojeData;
+    }
+    if (filtroPeriodoCid === "esteano"){
+      return data.getFullYear() === hojeData.getFullYear();
+    }
+    if (filtroPeriodoCid === "personalizado"){
+      const inicioStr = document.getElementById("cidDataInicio").value;
+      const fimStr = document.getElementById("cidDataFim").value;
+      if (inicioStr && data < new Date(inicioStr + "T00:00:00")) return false;
+      if (fimStr && data > new Date(fimStr + "T00:00:00")) return false;
+      return true;
+    }
+    return true;
+  }
+
+  document.querySelectorAll("#filtrosPeriodoCid .filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#filtrosPeriodoCid .filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroPeriodoCid = btn.dataset.periodo;
+      document.getElementById("cidPeriodoPersonalizado").style.display = filtroPeriodoCid === "personalizado" ? "grid" : "none";
+      renderizarRankingCid();
+    });
+  });
+  document.getElementById("cidDataInicio").addEventListener("change", renderizarRankingCid);
+  document.getElementById("cidDataFim").addEventListener("change", renderizarRankingCid);
+
   function renderizarRankingCid(){
     const grupo = document.getElementById("cidFiltroGrupo").value;
     const filial = document.getElementById("cidFiltroFilial").value;
@@ -4516,8 +4572,8 @@
 
     const idsDoGrupo = new Set(empresas.filter(e => e.grupoEmpresarial === grupo).map(e => e.id));
     const filtrados = atestadosCid.filter(a => {
-      if (filial === "geral") return idsDoGrupo.has(a.empresa_id);
-      return a.empresa_id === filial;
+      const bateEmpresa = filial === "geral" ? idsDoGrupo.has(a.empresa_id) : a.empresa_id === filial;
+      return bateEmpresa && periodoCidBateFiltro(a.data_atestado);
     });
 
     if (filtrados.length === 0){
@@ -4583,15 +4639,49 @@
     return `${m[3]}-${m[2]}-${m[1]}`;
   }
 
-  async function extrairTextoDoPdf(arrayBuffer){
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  async function extrairTextoDoArquivo(arquivo){
+    const ehImagem = arquivo.type.startsWith("image/");
+
+    if (ehImagem){
+      // Foto/print do atestado — vai direto pro OCR, sem passar pelo pdf.js
+      try {
+        const resultadoOcr = await Tesseract.recognize(arquivo, "por");
+        return { texto: resultadoOcr.data.text, viaOcr: true };
+      } catch (err){
+        console.error(err);
+        return { texto: "", viaOcr: true };
+      }
+    }
+
+    const buffer = await arquivo.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
     let textoTotal = "";
     for (let i = 1; i <= pdf.numPages; i++){
       const page = await pdf.getPage(i);
       const conteudo = await page.getTextContent();
       textoTotal += conteudo.items.map(it => it.str).join(" ") + " ";
     }
-    return textoTotal;
+
+    if (textoTotal.trim().length > 20){
+      return { texto: textoTotal, viaOcr: false };
+    }
+
+    // Provavelmente é um PDF escaneado (sem texto embutido) — tenta ler por OCR
+    try {
+      const primeiraPagina = await pdf.getPage(1);
+      const viewport = primeiraPagina.getViewport({ scale: 2 });
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext("2d");
+      await primeiraPagina.render({ canvasContext: ctx, viewport }).promise;
+
+      const resultadoOcr = await Tesseract.recognize(canvas, "por");
+      return { texto: resultadoOcr.data.text, viaOcr: true };
+    } catch (err){
+      console.error(err);
+      return { texto: "", viaOcr: true };
+    }
   }
 
   document.getElementById("btnCidLerArquivos").addEventListener("click", async () => {
@@ -4601,23 +4691,24 @@
       return;
     }
     const container = document.getElementById("cidListaConferencia");
-    container.innerHTML = "Lendo arquivos...";
 
     const itens = [];
-    for (const arquivo of arquivos){
-      let cidDetectado = "", dataDetectada = "", conseguiuLer = false;
+    for (let i = 0; i < arquivos.length; i++){
+      const arquivo = arquivos[i];
+      container.innerHTML = `Lendo arquivo ${i + 1} de ${arquivos.length} (${escapeHtml(arquivo.name)})... isso pode demorar alguns segundos quando precisa de leitura por imagem.`;
+      let cidDetectado = "", dataDetectada = "", conseguiuLer = false, viaOcr = false;
       try {
-        const buffer = await arquivo.arrayBuffer();
-        const texto = await extrairTextoDoPdf(buffer);
-        if (texto.trim().length > 20){
-          cidDetectado = extrairCidDoTexto(texto);
-          dataDetectada = extrairDataDoTexto(texto);
+        const resultado = await extrairTextoDoArquivo(arquivo);
+        viaOcr = resultado.viaOcr;
+        if (resultado.texto.trim().length > 20){
+          cidDetectado = extrairCidDoTexto(resultado.texto);
+          dataDetectada = extrairDataDoTexto(resultado.texto);
           conseguiuLer = true;
         }
       } catch (err){
         console.error(err);
       }
-      itens.push({ nomeArquivo: arquivo.name, cid: cidDetectado, data: dataDetectada, conseguiuLer });
+      itens.push({ nomeArquivo: arquivo.name, cid: cidDetectado, data: dataDetectada, conseguiuLer, viaOcr });
     }
 
     container.innerHTML = itens.map((item, i) => `
@@ -4633,7 +4724,11 @@
             <input type="date" class="cid-conf-data" data-idx="${i}" value="${item.data}">
           </div>
         </div>
-        ${!item.conseguiuLer ? `<div class="cid-conferencia-aviso">⚠️ Não foi possível ler automaticamente (parece ser um arquivo escaneado) — confira e preencha à mão.</div>` : ""}
+        ${!item.conseguiuLer
+          ? `<div class="cid-conferencia-aviso">⚠️ Não foi possível ler automaticamente (nem por texto, nem por imagem) — preencha à mão.</div>`
+          : item.viaOcr
+            ? `<div class="cid-conferencia-aviso">🔎 Lido por reconhecimento de imagem (OCR) — a confiabilidade é menor que num PDF digitado, confira com atenção.</div>`
+            : ""}
       </div>
     `).join("");
 
