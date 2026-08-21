@@ -4712,10 +4712,11 @@
     for (let i = 0; i < arquivos.length; i++){
       const arquivo = arquivos[i];
       container.innerHTML = `Lendo arquivo ${i + 1} de ${arquivos.length} (${escapeHtml(arquivo.name)})... isso pode demorar alguns segundos quando precisa de leitura por imagem.`;
-      let cidDetectado = "", dataDetectada = "", conseguiuLer = false, viaOcr = false;
+      let cidDetectado = "", dataDetectada = "", conseguiuLer = false, viaOcr = false, textoBruto = "";
       try {
         const resultado = await extrairTextoDoArquivo(arquivo);
         viaOcr = resultado.viaOcr;
+        textoBruto = resultado.texto;
         if (resultado.texto.trim().length > 20){
           cidDetectado = extrairCidDoTexto(resultado.texto);
           dataDetectada = extrairDataDoTexto(resultado.texto);
@@ -4724,7 +4725,7 @@
       } catch (err){
         console.error(err);
       }
-      itens.push({ nomeArquivo: arquivo.name, cid: cidDetectado, data: dataDetectada, conseguiuLer, viaOcr });
+      itens.push({ nomeArquivo: arquivo.name, cid: cidDetectado, data: dataDetectada, conseguiuLer, viaOcr, textoBruto });
     }
 
     container.innerHTML = itens.map((item, i) => `
@@ -4745,6 +4746,13 @@
           : item.viaOcr
             ? `<div class="cid-conferencia-aviso">🔎 Lido por reconhecimento de imagem (OCR) — a confiabilidade é menor que num PDF digitado, confira com atenção.</div>`
             : ""}
+        ${item.conseguiuLer && !item.cid ? `<div class="cid-conferencia-aviso">⚠️ O texto foi lido, mas não achei um CID nele — confira o texto abaixo e preencha à mão.</div>` : ""}
+        ${item.textoBruto ? `
+          <details style="margin-top:6px;">
+            <summary style="font-size:11.5px; color:var(--texto-suave); cursor:pointer;">Ver texto que foi lido</summary>
+            <pre style="white-space:pre-wrap; font-size:11px; background:var(--fundo); border-radius:6px; padding:8px; margin-top:6px; max-height:160px; overflow-y:auto;">${escapeHtml(item.textoBruto)}</pre>
+          </details>
+        ` : ""}
       </div>
     `).join("");
 
