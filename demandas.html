@@ -1910,8 +1910,23 @@
           </div>
           <div id="cidRankingContainer"></div>
           <div class="empty-state" id="cidRankingVazio" style="display:none;">Nenhum atestado registrado ainda nesse filtro.</div>
+          <div class="acoes-form">
+            <button type="button" class="btn-secundario" id="btnCidVerRegistros">Ver/gerenciar registros individuais</button>
+          </div>
         </div>
       </section>
+
+      <!-- MODAL VER/GERENCIAR REGISTROS -->
+      <div class="modal-overlay" id="modalCidRegistrosOverlay">
+        <div class="modal-box" style="max-width:600px;">
+          <h3 class="card-title">Registros individuais</h3>
+          <p class="card-sub">Todos os atestados do filtro atual (grupo/filial/período). Use pra corrigir ou apagar algum registro com data ou CID errados.</p>
+          <div id="cidListaRegistros" style="max-height:400px; overflow-y:auto;"></div>
+          <div class="modal-acoes">
+            <button type="button" class="btn-secundario" id="btnCidFecharRegistros">Fechar</button>
+          </div>
+        </div>
+      </div>
 
       <!-- MODAL UPLOAD DE ATESTADOS (CID) -->
       <div class="modal-overlay" id="modalCidOverlay">
@@ -1925,7 +1940,7 @@
             </div>
             <div class="form-group">
               <label for="cidAnoReferencia">Ano</label>
-              <input type="number" id="cidAnoReferencia" value="2026">
+              <input type="number" id="cidAnoReferencia" value="2026" min="2015" max="2035">
             </div>
           </div>
           <p class="form-hint" style="margin:-8px 0 14px;">Usado como data quando o sistema não conseguir ler a data no próprio atestado.</p>
@@ -6298,6 +6313,63 @@
     .map((nome, i) => `<option value="${i}">${capitalizarPrimeira(nome)}</option>`)
     .join("");
 
+  // ---- ver/gerenciar registros individuais ----
+  const modalCidRegistrosOverlay = document.getElementById("modalCidRegistrosOverlay");
+
+  function registrosFiltradosAtuais(){
+    const grupo = document.getElementById("cidFiltroGrupo").value;
+    const filial = document.getElementById("cidFiltroFilial").value;
+    const idsDoGrupo = new Set(empresas.filter(e => e.grupoEmpresarial === grupo).map(e => e.id));
+    return atestadosCid.filter(a => {
+      const bateEmpresa = filial === "geral" ? idsDoGrupo.has(a.empresa_id) : a.empresa_id === filial;
+      return bateEmpresa && periodoCidBateFiltro(a.data_atestado);
+    }).sort((a, b) => (b.data_atestado || "").localeCompare(a.data_atestado || ""));
+  }
+
+  function renderizarListaRegistros(){
+    const lista = registrosFiltradosAtuais();
+    const container = document.getElementById("cidListaRegistros");
+    if (lista.length === 0){
+      container.innerHTML = `<p class="card-sub">Nenhum registro nesse filtro.</p>`;
+      return;
+    }
+    container.innerHTML = lista.map(a => {
+      const empresaNome = empresas.find(e => e.id === a.empresa_id)?.razaoSocial || "—";
+      const dataFormatada = a.data_atestado ? formatarDataBR(a.data_atestado) : "sem data";
+      const anoEstranho = a.data_atestado && !dataEhPlausivel(Number(a.data_atestado.slice(0, 4)));
+      return `
+        <div class="cid-ranking-linha" style="align-items:center;">
+          <div style="flex:1;">
+            <div style="font-weight:700; font-size:13px;">${escapeHtml(a.cid_codigo)} <span style="font-weight:400; color:var(--texto-suave);">— ${escapeHtml(empresaNome)}</span></div>
+            <div style="font-size:12px; ${anoEstranho ? "color:var(--alerta); font-weight:700;" : "color:var(--texto-suave);"}">${anoEstranho ? "⚠️ " : ""}${dataFormatada}</div>
+          </div>
+          <button type="button" class="btn-remover" onclick="excluirAtestadoCid(${a.id})">Excluir</button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  window.excluirAtestadoCid = async function(id){
+    if (!confirm("Excluir esse registro? Essa ação não pode ser desfeita.")) return;
+    const { error } = await supabaseClient.from("atestados_cid").delete().eq("id", id);
+    if (error){
+      console.error(error);
+      mostrarErroGeral("Não foi possível excluir esse registro agora.");
+      return;
+    }
+    await carregarAtestadosCid();
+    renderizarRankingCid();
+    renderizarListaRegistros();
+  };
+
+  document.getElementById("btnCidVerRegistros").addEventListener("click", () => {
+    renderizarListaRegistros();
+    modalCidRegistrosOverlay.classList.add("active");
+  });
+  document.getElementById("btnCidFecharRegistros").addEventListener("click", () => {
+    modalCidRegistrosOverlay.classList.remove("active");
+  });
+
   document.getElementById("btnCidUpload").addEventListener("click", () => {
     const filial = document.getElementById("cidFiltroFilial").value;
     if (filial === "geral"){
@@ -6350,10 +6422,32 @@
     return "";
   }
 
+  function dataEhPlausivel(ano){
+    const anoAtual = hoje.getFullYear();
+    return ano >= anoAtual - 3 && ano <= anoAtual + 1;
+  }
+
   function extrairDataDoTexto(texto){
-    const m = texto.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    if (!m) return "";
-    return `${m[3]}-${m[2]}-${m[1]}`;
+    // primeiro tenta perto da frase típica de atestado ("a partir do dia, 11/08/2026"),
+    // que é bem mais confiável que pegar a primeira data solta do texto (que pode ser
+    // a data de um decreto, do registro do médico etc.)
+    const permitirEspacos = "[\\s\\-]*";
+    const padraoData = `(\\d{2})${permitirEspacos}\\/${permitirEspacos}(\\d{2})${permitirEspacos}\\/${permitirEspacos}(\\d{4})`;
+
+    const pertoDaFrase = texto.match(new RegExp(`a partir do dia[,:]?\\s*${padraoData}`, "i"));
+    if (pertoDaFrase){
+      const ano = Number(pertoDaFrase[3]);
+      if (dataEhPlausivel(ano)) return `${pertoDaFrase[3]}-${pertoDaFrase[2]}-${pertoDaFrase[1]}`;
+    }
+
+    // sem essa frase por perto: pega a primeira data do texto, mas só aceita
+    // se o ano for plausível (evita datas de decretos, leis, registro do médico etc.)
+    const todasAsDatas = [...texto.matchAll(new RegExp(padraoData, "g"))];
+    for (const m of todasAsDatas){
+      const ano = Number(m[3]);
+      if (dataEhPlausivel(ano)) return `${m[3]}-${m[2]}-${m[1]}`;
+    }
+    return "";
   }
 
   async function extrairTextoDoArquivo(arquivo){
@@ -6403,7 +6497,8 @@
 
   function dataReferenciaFallback(){
     const mes = Number(document.getElementById("cidMesReferencia").value);
-    const ano = Number(document.getElementById("cidAnoReferencia").value);
+    let ano = Number(document.getElementById("cidAnoReferencia").value);
+    if (!dataEhPlausivel(ano)) ano = hoje.getFullYear();
     return `${ano}-${String(mes + 1).padStart(2, "0")}-01`;
   }
 
@@ -6500,6 +6595,12 @@
     if (registros.length === 0){
       alert("Preencha ao menos um CID antes de salvar.");
       return;
+    }
+
+    const datasEstranhas = registros.filter(r => r.data_atestado && !dataEhPlausivel(Number(r.data_atestado.slice(0, 4))));
+    if (datasEstranhas.length > 0){
+      const confirmar = confirm(`${datasEstranhas.length} registro(s) têm uma data que parece estranha (ex: ${datasEstranhas[0].data_atestado}). Confira antes de continuar — quer salvar mesmo assim?`);
+      if (!confirmar) return;
     }
 
     const { error } = await supabaseClient.from("atestados_cid").insert(registros);
