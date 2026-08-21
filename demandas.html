@@ -4487,6 +4487,7 @@
 
   function descricaoCid(codigo){
     if (!codigo) return "";
+    if (codigo.trim().toUpperCase() === "SEM CID") return "Atestado não informa o CID";
     const categoria = codigo.trim().toUpperCase().slice(0, 3);
     return CID_DESCRICOES[categoria] || "";
   }
@@ -4740,6 +4741,10 @@
           <div class="form-group">
             <label>CID</label>
             <input type="text" class="cid-conf-codigo" data-idx="${i}" value="${escapeHtml(item.cid)}" placeholder="Ex: J45.9">
+            <div style="display:flex; align-items:center; gap:6px; margin-top:6px;">
+              <input type="checkbox" class="cid-conf-sem-cid" data-idx="${i}" id="cidSemCid${i}" style="width:auto;">
+              <label for="cidSemCid${i}" style="margin:0; font-weight:400; font-size:12px;">Atestado não informa o CID</label>
+            </div>
           </div>
           <div class="form-group">
             <label>Data do atestado</label>
@@ -4760,6 +4765,20 @@
         ` : ""}
       </div>
     `).join("");
+
+    document.querySelectorAll(".cid-conf-sem-cid").forEach(checkbox => {
+      checkbox.addEventListener("change", () => {
+        const idx = checkbox.dataset.idx;
+        const campoCid = document.querySelector(`.cid-conf-codigo[data-idx="${idx}"]`);
+        if (checkbox.checked){
+          campoCid.value = "SEM CID";
+          campoCid.disabled = true;
+        } else {
+          campoCid.value = "";
+          campoCid.disabled = false;
+        }
+      });
+    });
 
     document.getElementById("btnCidSalvarTodos").style.display = "inline-block";
   });
