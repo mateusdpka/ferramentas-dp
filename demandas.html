@@ -6416,6 +6416,17 @@
     const comPonto = texto.match(/\b([A-TV-Z])\s*(\d)\s*(\d)\s*[.,]\s*(\d)\b/);
     if (comPonto) return montarCodigo(comPonto[1], comPonto[2], comPonto[3], comPonto[4]);
 
+    // formato usado por alguns convênios (ex: Hapvida): o código aparece sozinho numa linha,
+    // sem "CID" na frente e sem ponto — ex: "H830" (= H83.0), geralmente perto de um rótulo
+    // "Código da Doença" logo abaixo. Prioriza isso perto desse rótulo quando existir.
+    const pertoDoRotuloDepois = texto.match(/\b([A-TV-Z])(\d)(\d)(\d)\b[^A-Za-z0-9]{0,40}C[óo]digo\s*d[ae]\s*Doen[çc]a/i);
+    if (pertoDoRotuloDepois) return montarCodigo(pertoDoRotuloDepois[1], pertoDoRotuloDepois[2], pertoDoRotuloDepois[3], pertoDoRotuloDepois[4]);
+
+    // mesmo formato de 4 caracteres sem ponto, mas sem o rótulo por perto — ainda vale
+    // mais que um código de 3 caracteres solto, já que é mais específico
+    const semPontoQuatroChars = texto.match(/\b([A-TV-Z])(\d)(\d)(\d)\b/);
+    if (semPontoQuatroChars) return montarCodigo(semPontoQuatroChars[1], semPontoQuatroChars[2], semPontoQuatroChars[3], semPontoQuatroChars[4]);
+
     const semPonto = texto.match(/\b([A-TV-Z])(\d)(\d)\b/);
     if (semPonto) return montarCodigo(semPonto[1], semPonto[2], semPonto[3], null);
 
@@ -6434,7 +6445,7 @@
     const permitirEspacos = "[\\s\\-]*";
     const padraoData = `(\\d{2})${permitirEspacos}\\/${permitirEspacos}(\\d{2})${permitirEspacos}\\/${permitirEspacos}(\\d{4})`;
 
-    const pertoDaFrase = texto.match(new RegExp(`a partir do dia[,:]?\\s*${padraoData}`, "i"));
+    const pertoDaFrase = texto.match(new RegExp(`a partir d[oe]\\s*(?:dia)?[,:]?\\s*${padraoData}`, "i"));
     if (pertoDaFrase){
       const ano = Number(pertoDaFrase[3]);
       if (dataEhPlausivel(ano)) return `${pertoDaFrase[3]}-${pertoDaFrase[2]}-${pertoDaFrase[1]}`;
