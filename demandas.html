@@ -6394,6 +6394,15 @@
   // OCR costuma confundir a letra inicial do CID com um dígito parecido
   const MAPA_DIGITO_PARA_LETRA_CID = { "0": "O", "1": "I", "2": "Z", "5": "S", "6": "G", "8": "B" };
 
+  // OCR também pode confundir dígitos DENTRO do código com letras parecidas (ex: 0/Q, 9/I) —
+  // esse mapa é usado só quando já sabemos que aquela posição deveria ser um dígito.
+  const MAPA_LETRA_PARA_DIGITO_CID = { "O": "0", "Q": "0", "D": "0", "I": "9", "L": "1", "Z": "2", "S": "5", "G": "6", "B": "8" };
+
+  function corrigirDigito(caractere){
+    if (/\d/.test(caractere)) return caractere;
+    return MAPA_LETRA_PARA_DIGITO_CID[caractere.toUpperCase()] || caractere;
+  }
+
   function extrairCidDoTexto(texto){
     function montarCodigo(letra, d1, d2, decimal){
       return letra.toUpperCase() + d1 + d2 + (decimal ? "." + decimal : "");
@@ -6419,8 +6428,11 @@
     // formato usado por alguns convênios (ex: Hapvida): o código aparece sozinho numa linha,
     // sem "CID" na frente e sem ponto — ex: "H830" (= H83.0), geralmente perto de um rótulo
     // "Código da Doença" logo abaixo. Prioriza isso perto desse rótulo quando existir.
-    const pertoDoRotuloDepois = texto.match(/\b([A-TV-Z])(\d)(\d)(\d)\b[^A-Za-z0-9]{0,40}C[óo]digo\s*d[ae]\s*Doen[çc]a/i);
-    if (pertoDoRotuloDepois) return montarCodigo(pertoDoRotuloDepois[1], pertoDoRotuloDepois[2], pertoDoRotuloDepois[3], pertoDoRotuloDepois[4]);
+    // Tolera também letras que o OCR pode confundir com dígitos nessa posição (ex: 0/O/Q/D,
+    // 1/I/L, 2/Z, 5/S, 6/G, 8/B) — só faz essa correção aqui, bem perto do rótulo, onde dá
+    // pra confiar que aquilo é mesmo o código.
+    const pertoDoRotuloDepois = texto.match(/\b([A-TV-Z])([0-9OQDILZSGB])([0-9OQDILZSGB])([0-9OQDILZSGB])\b[^A-Za-z0-9]{0,40}C[óo]digo\s*d[ae]\s*Doen[çc]a/i);
+    if (pertoDoRotuloDepois) return montarCodigo(pertoDoRotuloDepois[1], corrigirDigito(pertoDoRotuloDepois[2]), corrigirDigito(pertoDoRotuloDepois[3]), corrigirDigito(pertoDoRotuloDepois[4]));
 
     // mesmo formato de 4 caracteres sem ponto, mas sem o rótulo por perto — ainda vale
     // mais que um código de 3 caracteres solto, já que é mais específico
