@@ -1453,6 +1453,34 @@
     header.topbar{ padding: 16px 18px; }
     .content{ padding: 18px; }
   }
+  /* RELATÓRIO DE CID (impressão) */
+  #areaImpressaoRelatorioCid{ display:none; }
+  .relatorio-cid-pagina{ font-family: Arial, sans-serif; color:#2d2d2d; padding: 10mm; }
+  .relatorio-cid-cabecalho{
+    display:flex; align-items:center; gap:16px; border-bottom: 3px solid var(--marca-dourado);
+    padding-bottom: 14px; margin-bottom: 18px;
+  }
+  .relatorio-cid-logo{ height: 40px; width:auto; }
+  .relatorio-cid-titulo{ font-size: 19px; font-weight:700; }
+  .relatorio-cid-sub{ font-size: 12.5px; color: var(--texto-suave); margin-top:2px; }
+  .relatorio-cid-meta{ font-size: 12.5px; margin-bottom: 18px; line-height:1.7; }
+  .relatorio-cid-meta b{ color: var(--texto); }
+  table.relatorio-cid-tabela{ width:100%; border-collapse:collapse; font-size: 12.5px; }
+  table.relatorio-cid-tabela th{
+    text-align:left; background: var(--marca-escura); color:#fff; padding: 8px 10px; font-size:11px;
+    text-transform:uppercase; letter-spacing:0.03em;
+  }
+  table.relatorio-cid-tabela td{ padding: 7px 10px; border-bottom: 1px solid var(--borda); }
+  table.relatorio-cid-tabela tr:nth-child(even) td{ background: var(--fundo); }
+  .relatorio-cid-rodape{ margin-top: 20px; font-size: 11px; color: var(--texto-suave); text-align:center; }
+
+  @media print{
+    body *{ visibility: hidden; }
+    #areaImpressaoRelatorioCid, #areaImpressaoRelatorioCid *{ visibility: visible; }
+    #areaImpressaoRelatorioCid{ display:block; position:absolute; top:0; left:0; width:100%; }
+    @page{ size: A4; margin: 12mm; }
+  }
+
 </style>
 </head>
 <body>
@@ -1912,6 +1940,8 @@
           <div class="empty-state" id="cidRankingVazio" style="display:none;">Nenhum atestado registrado ainda nesse filtro.</div>
           <div class="acoes-form">
             <button type="button" class="btn-secundario" id="btnCidVerRegistros">Ver/gerenciar registros individuais</button>
+            <button type="button" class="btn-primario" id="btnCidRelatorioPdf">Gerar relatório (PDF)</button>
+            <button type="button" class="btn-secundario" id="btnCidExportarCsv">Exportar CSV</button>
           </div>
         </div>
       </section>
@@ -4480,7 +4510,7 @@
   // Código fora dessa lista aparece no ranking sem descrição, nunca com descrição inventada.
   const CID_DESCRICOES = {
 // Fonte: INSS/Dataprev/SPS - Acompanhamento Mensal dos Beneficios Auxilio-Doenca (jan/2011),
-// tabela oficial de categorias (3 caracteres) da CID-10. Cobre virtualmente todos os codigos.
+// tabela oficial de categorias (3 caracteres) da CID-10, incluindo o capitulo XX (causas externas).
     "A00": "Cólera",
     "A01": "Febres tifóide e paratifóide",
     "A02": "Outras infecções por Salmonella",
@@ -6061,6 +6091,378 @@
     "T96": "Seqüelas de intoxicação por drogas, medicamentos e substâncias biológicas",
     "T97": "Seqüelas de efeitos tóxicos de substâncias de origem predominantemente não-medicinal",
     "T98": "Seqüelas de outros efeitos de causas externas e dos não especificados",
+    "V01": "Pedestre traumatizado em colisão com um veículo a pedal",
+    "V02": "Pedestre traumatizado em colisão com um veículo a motor de duas ou três rodas",
+    "V03": "Pedestre traumatizado em colisão com um automóvel, pick-up ou caminhonete",
+    "V04": "Pedestre traumatizado em colisão com um veículo de transporte pesado ou um ônibus",
+    "V05": "Pedestre traumatizado em colisão com trem ou um veículo ferroviário",
+    "V06": "Pedestre traumatizado em colisão com outro veículo não-motorizado",
+    "V09": "Pedestre traumatizado em outros acidentes de transporte e nos não especificados",
+    "V10": "Ciclista traumatizado em colisão com um pedestre ou um animal",
+    "V11": "Ciclista traumatizado em colisão com outro veículo a pedal",
+    "V12": "Ciclista traumatizado em colisão com um veículo a motor de duas ou três rodas",
+    "V13": "Ciclista traumatizado em colisão com um automóvel, pick-up ou caminhonete",
+    "V14": "Ciclista traumatizado em colisão com um veículo de transporte pesado ou um ônibus",
+    "V15": "Ciclista traumatizado em colisão com um trem ou um veículo ferroviário",
+    "V16": "Ciclista traumatizado em colisão com outro veículo não-motorizado",
+    "V17": "Ciclista traumatizado em colisão com um objeto fixo ou parado",
+    "V18": "Ciclista traumatizado em um acidente de transporte sem colisão",
+    "V19": "Ciclista traumatizado em outros acidentes de transporte e em acidentes não especificados",
+    "V20": "Motociclista traumatizado em colisão com um pedestre ou um animal",
+    "V21": "Motociclista traumatizado em colisão com um veículo a pedal",
+    "V22": "Motociclista traumatizado em colisão com um veículo a motor de duas ou três rodas",
+    "V23": "Motociclista traumatizado em colisão com um automóvel, pick-up ou caminhonete",
+    "V24": "Motociclista traumatizado em colisão com um veículo de transporte pesado ou um ônibus",
+    "V25": "Motociclista traumatizado em colisão com um trem ou um veículo ferroviário",
+    "V26": "Motociclista traumatizado em colisão com outro veículo não-motorizado",
+    "V27": "Motociclista traumatizado em colisão com um objeto fixo ou parado",
+    "V28": "Motociclista traumatizado em um acidente de transporte sem colisão",
+    "V29": "Motociclista traumatizado em outros acidentes de transporte e em acidentes não especificados",
+    "V30": "Ocupante de um triciclo motorizado traumatizado em colisão com pedestre ou animal",
+    "V31": "Ocupante de um triciclo motorizado traumatizado em colisão com veículo a pedal",
+    "V32": "Ocupante de um triciclo motorizado traumatizado em colisão com veículo a motor de duas ou três rodas",
+    "V33": "Ocupante de um triciclo motorizado traumatizado em colisão com automóvel, pick-up ou caminhonete",
+    "V34": "Ocupante de um triciclo motorizado traumatizado em colisão com veículo de transporte pesado ou ônibus",
+    "V35": "Ocupante de um triciclo motorizado traumatizado em colisão com trem ou veículo ferroviário",
+    "V36": "Ocupante de um triciclo motorizado traumatizado em colisão com outro veículo não-motorizado",
+    "V37": "Ocupante de um triciclo motorizado traumatizado em colisão com objeto fixo ou parado",
+    "V38": "Ocupante de um triciclo motorizado traumatizado em acidente de transporte sem colisão",
+    "V39": "Ocupante de um triciclo motorizado traumatizado em outros acidentes de transporte",
+    "V40": "Ocupante de um automóvel traumatizado em colisão com pedestre ou animal",
+    "V41": "Ocupante de um automóvel traumatizado em colisão com veículo a pedal",
+    "V42": "Ocupante de um automóvel traumatizado em colisão com veículo a motor de duas ou três rodas",
+    "V43": "Ocupante de um automóvel traumatizado em colisão com outro automóvel, pick-up ou caminhonete",
+    "V44": "Ocupante de um automóvel traumatizado em colisão com veículo de transporte pesado ou ônibus",
+    "V45": "Ocupante de um automóvel traumatizado em colisão com trem ou veículo ferroviário",
+    "V46": "Ocupante de um automóvel traumatizado em colisão com outro veículo não-motorizado",
+    "V47": "Ocupante de um automóvel traumatizado em colisão com objeto fixo ou parado",
+    "V48": "Ocupante de um automóvel traumatizado em acidente de transporte sem colisão",
+    "V49": "Ocupante de um automóvel traumatizado em outro acidente de transporte",
+    "V50": "Ocupante de uma caminhonete traumatizado em colisão com pedestre ou animal",
+    "V51": "Ocupante de uma caminhonete traumatizado em colisão com veículo a pedal",
+    "V52": "Ocupante de uma caminhonete traumatizado em colisão com veículo a motor de duas ou três rodas",
+    "V53": "Ocupante de uma caminhonete traumatizado em colisão com automóvel, pick-up ou caminhonete",
+    "V54": "Ocupante de uma caminhonete traumatizado em colisão com veículo de transporte pesado ou ônibus",
+    "V55": "Ocupante de uma caminhonete traumatizado em colisão com trem ou veículo ferroviário",
+    "V56": "Ocupante de uma caminhonete traumatizado em colisão com outro veículo não-motorizado",
+    "V57": "Ocupante de uma caminhonete traumatizado em colisão com objeto fixo ou parado",
+    "V58": "Ocupante de uma caminhonete traumatizado em acidente de transporte sem colisão",
+    "V59": "Ocupante de uma caminhonete traumatizado em outros acidentes de transporte",
+    "V60": "Ocupante de veículo de transporte pesado traumatizado em colisão com pedestre ou animal",
+    "V61": "Ocupante de veículo de transporte pesado traumatizado em colisão com veículo a pedal",
+    "V62": "Ocupante de veículo de transporte pesado traumatizado em colisão com veículo a motor de duas ou três rodas",
+    "V63": "Ocupante de veículo de transporte pesado traumatizado em colisão com automóvel, pick-up ou caminhonete",
+    "V64": "Ocupante de veículo de transporte pesado traumatizado em colisão com outro veículo de transporte pesado ou ônibus",
+    "V65": "Ocupante de veículo de transporte pesado traumatizado em colisão com trem ou veículo ferroviário",
+    "V66": "Ocupante de veículo de transporte pesado traumatizado em colisão com outro veículo não-motorizado",
+    "V67": "Ocupante de veículo de transporte pesado traumatizado em colisão com objeto fixo ou parado",
+    "V68": "Ocupante de veículo de transporte pesado traumatizado em acidente de transporte sem colisão",
+    "V69": "Ocupante de veículo de transporte pesado traumatizado em outros acidentes de transporte",
+    "V70": "Ocupante de um ônibus traumatizado em colisão com pedestre ou animal",
+    "V71": "Ocupante de um ônibus traumatizado em colisão com veículo a pedal",
+    "V72": "Ocupante de um ônibus traumatizado em colisão com veículo a motor de duas ou três rodas",
+    "V73": "Ocupante de um ônibus traumatizado em colisão com automóvel, pick-up ou caminhonete",
+    "V74": "Ocupante de um ônibus traumatizado em colisão com veículo de transporte pesado ou outro ônibus",
+    "V75": "Ocupante de um ônibus traumatizado em colisão com trem ou veículo ferroviário",
+    "V76": "Ocupante de um ônibus traumatizado em colisão com outro veículo não-motorizado",
+    "V77": "Ocupante de um ônibus traumatizado em colisão com objeto fixo ou parado",
+    "V78": "Ocupante de um ônibus traumatizado em acidente de transporte sem colisão",
+    "V79": "Ocupante de um ônibus traumatizado em outros acidentes de transporte",
+    "V80": "Pessoa montada em animal ou ocupante de veículo de tração animal traumatizada em acidente de transporte",
+    "V81": "Ocupante de um trem ou veículo ferroviário traumatizado em acidente de transporte",
+    "V82": "Ocupante de um bonde traumatizado em acidente de transporte",
+    "V83": "Ocupante de um veículo especial a motor usado principalmente em terrenos industriais traumatizado",
+    "V84": "Ocupante de um veículo especial a motor de uso essencialmente agrícola traumatizado em acidente",
+    "V85": "Ocupante de um veículo a motor especial de construções traumatizado em acidente de transporte",
+    "V86": "Ocupante de um veículo especial para qualquer terreno ou de outro veículo todo-o-terreno traumatizado",
+    "V87": "Acidente de trânsito de tipo especificado, mas sendo desconhecida a categoria da vítima",
+    "V88": "Acidente não-de-trânsito de tipo especificado, mas sendo desconhecida a categoria da vítima",
+    "V89": "Acidente com um veículo a motor ou não-motorizado, tipo de veículo não especificado",
+    "V90": "Acidente com embarcação causando afogamento e submersão",
+    "V91": "Acidente com embarcação causando outro tipo de traumatismo",
+    "V92": "Afogamento e submersão relacionados com transporte por água, sem acidente com a embarcação",
+    "V93": "Acidente a bordo de uma embarcação, sem acidente da embarcação, sem afogamento ou submersão",
+    "V94": "Outros acidentes de transporte por água e os não especificados",
+    "V95": "Acidente de aeronave a motor causando traumatismo ao ocupante",
+    "V96": "Acidente de uma aeronave sem motor causando traumatismo ao ocupante",
+    "V97": "Outros acidentes especificados de transporte aéreo",
+    "V98": "Outros acidentes de transporte especificados",
+    "V99": "Acidente de transporte não especificado",
+    "W00": "Queda no mesmo nível envolvendo gelo e neve",
+    "W01": "Queda no mesmo nível por escorregão, tropeção ou passos em falso",
+    "W02": "Queda envolvendo patins de rodas ou para gelo, esqui ou prancha de rolamento",
+    "W03": "Outras quedas no mesmo nível por colisão com ou empurrão por outra pessoa",
+    "W04": "Queda enquanto era carregado ou apoiado por outra(s) pessoa(s)",
+    "W05": "Queda envolvendo uma cadeira de rodas",
+    "W06": "Queda de um leito",
+    "W07": "Queda de uma cadeira",
+    "W08": "Queda de outro tipo de mobília",
+    "W09": "Queda envolvendo equipamento de playground",
+    "W10": "Queda em ou de escadas ou degraus",
+    "W11": "Queda em ou de escadas de mão",
+    "W12": "Queda em ou de um andaime",
+    "W13": "Queda de ou para fora de edifícios ou outras estruturas",
+    "W14": "Queda de árvore",
+    "W15": "Queda de penhasco",
+    "W16": "Mergulho ou pulo na água causando outro traumatismo que não afogamento ou submersão",
+    "W17": "Outras quedas de um nível a outro",
+    "W18": "Outras quedas no mesmo nível",
+    "W19": "Queda sem especificação",
+    "W20": "Impacto causado por objeto lançado, projetado ou em queda",
+    "W21": "Impacto acidental ativo ou passivo causado por equipamento esportivo",
+    "W22": "Impacto acidental ativo ou passivo causado por outros objetos",
+    "W23": "Apertado, colhido, comprimido ou esmagado dentro de ou entre objetos",
+    "W24": "Contato com elevadores e instrumentos de transmissão, não classificados em outra parte",
+    "W25": "Contato com vidro cortante",
+    "W26": "Contato com faca, espada e punhal",
+    "W27": "Contato com ferramentas manuais sem motor",
+    "W28": "Contato com segadeira motorizada para cortar ou aparar a grama",
+    "W29": "Contato com outros utensílios manuais e aparelhos domésticos",
+    "W30": "Contato com maquinaria agrícola",
+    "W31": "Contato com outras máquinas e com as não especificadas",
+    "W32": "Disparo de revólver",
+    "W33": "Disparo de rifle, espingarda e arma de fogo de maior tamanho",
+    "W34": "Disparo de outras armas de fogo e das não especificadas",
+    "W35": "Explosão ou ruptura de caldeira",
+    "W36": "Explosão ou ruptura de cilindro de gás",
+    "W37": "Explosão ou ruptura de pneumático, tubulação ou mangueira, pressurizados",
+    "W38": "Explosão ou ruptura de outros aparelhos pressurizados especificados",
+    "W39": "Queima de fogos de artifício",
+    "W40": "Explosão de outros materiais",
+    "W41": "Exposição a um jato de alta pressão",
+    "W42": "Exposição ao ruído",
+    "W43": "Exposição à vibração",
+    "W44": "Penetração de corpo estranho no ou através de olho ou orifício natural",
+    "W45": "Penetração de corpo ou objeto estranho através da pele",
+    "W49": "Exposição a outras forças mecânicas inanimadas e às não especificadas",
+    "W50": "Golpe, pancada, pontapé, mordedura ou escoriação infligidos por outra pessoa",
+    "W51": "Colisão entre duas pessoas",
+    "W52": "Esmagado, empurrado ou pisoteado por multidão ou debandada humana",
+    "W53": "Mordedura de rato",
+    "W54": "Mordedura ou golpe provocado por cão",
+    "W55": "Mordedura ou golpe provocado por outros animais mamíferos",
+    "W56": "Contato com animais marinhos",
+    "W57": "Mordeduras e picadas de inseto e de outros artrópodes, não-venenosos",
+    "W58": "Mordedura ou golpe provocado por crocodilo ou aligator",
+    "W59": "Mordedura ou esmagamento provocado por outros répteis",
+    "W60": "Contato com espinhos de plantas ou com folhas aguçadas",
+    "W64": "Exposição a outras forças mecânicas animadas e às não especificadas",
+    "W65": "Afogamento e submersão durante banho em banheira",
+    "W66": "Afogamento e submersão consecutiva a queda dentro de uma banheira",
+    "W67": "Afogamento e submersão em piscina",
+    "W68": "Afogamento e submersão conseqüente a queda dentro de uma piscina",
+    "W69": "Afogamento e submersão em águas naturais",
+    "W70": "Afogamento e submersão conseqüentes a queda dentro de águas naturais",
+    "W73": "Outros afogamentos e submersão especificados",
+    "W74": "Afogamento e submersão não especificados",
+    "W75": "Sufocação e estrangulamento acidental na cama",
+    "W76": "Outro enforcamento e estrangulamento acidental",
+    "W77": "Risco a respiração devido a desmoronamento, queda de terra e outras substâncias",
+    "W78": "Inalação do conteúdo gástrico",
+    "W79": "Inalação e ingestão de alimentos causando obstrução do trato respiratório",
+    "W80": "Inalação e ingestão de outros objetos causando obstrução do trato respiratório",
+    "W81": "Confinado ou aprisionado em um ambiente pobre em oxigênio",
+    "W83": "Outros riscos especificados à respiração",
+    "W84": "Riscos não especificados à respiração",
+    "W85": "Exposição a linhas de transmissão de corrente elétrica",
+    "W86": "Exposição a outra corrente elétrica especificada",
+    "W87": "Exposição a corrente elétrica não especificada",
+    "W88": "Exposição a radiação ionizante",
+    "W89": "Exposição a fontes luminosas artificiais visíveis ou à luz ultravioleta artificial",
+    "W90": "Exposição a outros tipos de radiação não-ionizante",
+    "W91": "Exposição a tipo não especificado de radiação",
+    "W92": "Exposição a um calor excessivo de origem artificial",
+    "W93": "Exposição a um frio excessivo de origem artificial",
+    "W94": "Exposição a alta, baixa e a variações da pressão atmosférica",
+    "W99": "Exposição a outros fatores ambientais artificiais e aos não especificados",
+    "X00": "Exposição a fogo não-controlado em um edifício ou outro tipo de construção",
+    "X01": "Exposição a fogo não-controlado fora de um edifício ou de outro tipo de construção",
+    "X02": "Exposição a fogo controlado em um edifício ou outro tipo de construção",
+    "X03": "Exposição a fogo controlado fora de um edifício ou de outro tipo de construção",
+    "X04": "Exposição a combustão de substância muito inflamável",
+    "X05": "Exposição a combustão de roupa de dormir",
+    "X06": "Exposição a combustão de outro tipo de roupa ou de acessório",
+    "X08": "Exposição a outro tipo especificado de fumos, fogo ou chamas",
+    "X09": "Exposição a tipo não especificado de fumos, fogo ou chamas",
+    "X10": "Contato com bebidas, alimentos, gordura e óleo de cozinha quentes",
+    "X11": "Contato com água corrente quente de torneira",
+    "X12": "Contato com outros líquidos quentes",
+    "X13": "Contato com vapor d'água e com vapores quentes",
+    "X14": "Contato com ar e gases quentes",
+    "X15": "Contato com aparelhos domésticos quentes",
+    "X16": "Contato com aquecedores, radiadores e tubulação",
+    "X17": "Contato com motores, máquinas e ferramentos quentes",
+    "X18": "Contato com outros metais quentes",
+    "X19": "Contato com outras fontes de calor ou com substâncias quentes não especificadas",
+    "X20": "Contato com serpentes e lagartos venenosos",
+    "X21": "Contato com aranhas venenosas",
+    "X22": "Contato com escorpiões",
+    "X23": "Contato com abelhas, vespas e vespões",
+    "X24": "Contato com centopéias e miríapodes venenosas (tropicais)",
+    "X25": "Contato com outros artrópodes venenosos especificados",
+    "X26": "Contato com animais e plantas marinhos venenosos",
+    "X27": "Contato com outros animais venenosos especificados",
+    "X28": "Contato com outras plantas venenosas especificadas",
+    "X29": "Contato com animais ou plantas venenosos, sem especificação",
+    "X30": "Exposição a calor natural excessivo",
+    "X31": "Exposição a frio natural excessivo",
+    "X32": "Exposição à luz solar",
+    "X33": "Vítima de raio",
+    "X34": "Vítima de terremoto",
+    "X35": "Vítima de erupção vulcânica",
+    "X36": "Vítima de avalanche, desabamento de terra e outros movimentos da superfície da terra",
+    "X37": "Vítima de tempestade cataclísmica",
+    "X38": "Vítima de inundação",
+    "X39": "Exposição a outras forças da natureza e às não especificadas",
+    "X40": "Envenenamento acidental por e exposição a analgésicos não-opiáceos, antipiréticos e anti-reumáticos",
+    "X41": "Envenenamento acidental por e exposição a anticonvulsivantes e antiparkinsonianos",
+    "X42": "Envenenamento acidental por e exposição a narcóticos e psicodislépticos [alucinógenos]",
+    "X43": "Envenenamento acidental por e exposição a outras substâncias que atuam sobre o sistema nervoso autônomo",
+    "X44": "Envenenamento acidental por e exposição a outras drogas, medicamentos e substâncias biológicas",
+    "X45": "Envenenamento acidental por e exposição ao álcool",
+    "X46": "Envenenamento acidental por e exposição a solventes orgânicos e hidrocarbonetos halogenados",
+    "X47": "Intoxicação acidental por e exposição a outros gases e vapores",
+    "X48": "Envenenamento acidental por e exposição a pesticidas",
+    "X49": "Envenenamento acidental por e exposição a outras substâncias químicas e as não especificadas",
+    "X50": "Excesso de exercícios e movimentos vigorosos ou repetitivos",
+    "X51": "Viagem e movimento",
+    "X52": "Estadia prolongada em ambiente agravitacional",
+    "X53": "Falta de alimento",
+    "X54": "Falta de água",
+    "X57": "Privação não especificada",
+    "X58": "Exposição a outros fatores especificados",
+    "X59": "Exposição a fatores não especificados",
+    "X60": "Auto-intoxicação por e exposição, intencional, a analgésicos, antipiréticos e anti-reumáticos",
+    "X61": "Auto-intoxicação por e exposição, intencional, a drogas anticonvulsivantes e antiparkinsonianas",
+    "X62": "Auto-intoxicação por e exposição, intencional, a narcóticos e psicodislépticos [alucinógenos]",
+    "X63": "Auto-intoxicação por e exposição, intencional, a outras substâncias que atuam sobre o sistema nervoso autônomo",
+    "X64": "Auto-intoxicação por e exposição, intencional, a outras drogas, medicamentos e substâncias biológicas",
+    "X65": "Auto-intoxicação voluntária por álcool",
+    "X66": "Auto-intoxicação intencional por solventes orgânicos, hidrocarbonetos halogenados e seus vapores",
+    "X67": "Auto-intoxicação intencional por outros gases e vapores",
+    "X68": "Auto-intoxicação por e exposição, intencional, a pesticidas",
+    "X69": "Auto-intoxicação por e exposição, intencional, a outros produtos químicos e substâncias nocivas",
+    "X70": "Lesão autoprovocada intencionalmente por enforcamento, estrangulamento e sufocação",
+    "X71": "Lesão autoprovocada intencionalmente por afogamento e submersão",
+    "X72": "Lesão autoprovocada intencionalmente por disparo de arma de fogo de mão",
+    "X73": "Lesão autoprovocada intencionalmente por disparo de espingarda, carabina e arma de fogo maior",
+    "X74": "Lesão autoprovocada intencionalmente por disparo de outra arma de fogo e a não especificada",
+    "X75": "Lesão autoprovocada intencionalmente por dispositivos explosivos",
+    "X76": "Lesão autoprovocada intencionalmente pela fumaça, pelo fogo e por chamas",
+    "X77": "Lesão autoprovocada intencionalmente por vapor de água, gases ou objetos quentes",
+    "X78": "Lesão autoprovocada intencionalmente por objeto cortante ou penetrante",
+    "X79": "Lesão autoprovocada intencionalmente por objeto contundente",
+    "X80": "Lesão autoprovocada intencionalmente por precipitação de um lugar elevado",
+    "X81": "Lesão autoprovocada intencionalmente por precipitação ou permanência diante de um objeto em movimento",
+    "X82": "Lesão autoprovocada intencionalmente por impacto de um veículo a motor",
+    "X83": "Lesão autoprovocada intencionalmente por outros meios especificados",
+    "X84": "Lesão autoprovocada intencionalmente por meios não especificados",
+    "X85": "Agressão por meio de drogas, medicamentos e substâncias biológicas",
+    "X86": "Agressão por meio de substâncias corrosivas",
+    "X87": "Agressão por pesticidas",
+    "X88": "Agressão por meio de gases e vapores",
+    "X89": "Agressão por meio de outros produtos químicos especificados e substâncias nocivas",
+    "X90": "Agressão por meio de produtos químicos e substâncias nocivas não especificadas",
+    "X91": "Agressão por meio de enforcamento, estrangulamento e sufocação",
+    "X92": "Agressão por meio de afogamento e submersão",
+    "X93": "Agressão por meio de disparo de arma de fogo de mão",
+    "X94": "Agressão por meio de disparo de espingarda, carabina ou arma de fogo maior",
+    "X95": "Agressão por meio de disparo de outra arma de fogo ou de arma não especificada",
+    "X96": "Agressão por meio de material explosivo",
+    "X97": "Agressão por meio de fumaça, fogo e chamas",
+    "X98": "Agressão por meio de vapor de água, gases ou objetos quentes",
+    "X99": "Agressão por meio de objeto cortante ou penetrante",
+    "Y00": "Agressão por meio de um objeto contundente",
+    "Y01": "Agressão por meio de projeção de um lugar elevado",
+    "Y02": "Agressão por meio de projeção ou colocação da vítima diante de objeto em movimento",
+    "Y03": "Agressão por meio de impacto de um veículo a motor",
+    "Y04": "Agressão por meio de força corporal",
+    "Y05": "Agressão sexual por meio de força física",
+    "Y06": "Negligência e abandono",
+    "Y07": "Outras síndromes de maus tratos",
+    "Y08": "Agressão por outros meios especificados",
+    "Y09": "Agressão por meios não especificados",
+    "Y10": "Envenenamento por e exposição a analgésicos, antipiréticos e anti-reumáticos, intenção indeterminada",
+    "Y11": "Envenenamento por e exposição a anticonvulsivantes e antiparkinsonianos, intenção indeterminada",
+    "Y12": "Envenenamento por e exposição a narcóticos e psicodislépticos, intenção indeterminada",
+    "Y13": "Envenenamento por e exposição a outras substâncias autônomas, intenção indeterminada",
+    "Y14": "Envenenamento por e exposição a outras drogas e substâncias biológicas, intenção indeterminada",
+    "Y15": "Envenenamento por e exposição ao álcool, intenção não determinada",
+    "Y16": "Envenenamento por e exposição a solventes orgânicos, intenção não determinada",
+    "Y17": "Envenenamento por e exposição a outros gases e vapores, intenção não determinada",
+    "Y18": "Envenenamento por e exposição a pesticidas, intenção não determinada",
+    "Y19": "Envenenamento por e exposição a outros produtos químicos, intenção não determinada",
+    "Y20": "Enforcamento, estrangulamento e sufocação, intenção não determinada",
+    "Y21": "Afogamento e submersão, intenção não determinada",
+    "Y22": "Disparo de pistola, intenção não determinada",
+    "Y23": "Disparo de fuzil, carabina e arma de fogo de maior calibre, intenção não determinada",
+    "Y24": "Disparo de outra arma de fogo e de arma de fogo não especificada, intenção não determinada",
+    "Y25": "Contato com material explosivo, intenção não determinada",
+    "Y26": "Exposição a fumaça, fogo e chamas, intenção não determinada",
+    "Y27": "Exposição a vapor de água, gases ou objetos quentes, intenção não determinada",
+    "Y28": "Contato com objeto cortante ou penetrante, intenção não determinada",
+    "Y29": "Contato com objeto contundente, intenção não determinada",
+    "Y30": "Queda, salto ou empurrado de um lugar elevado, intenção não determinada",
+    "Y31": "Queda, permanência ou corrida diante de um objeto em movimento, intenção não determinada",
+    "Y32": "Impacto de um veículo a motor, intenção não determinada",
+    "Y33": "Outros fatos ou eventos especificados, intenção não determinada",
+    "Y34": "Fatos ou eventos não especificados e intenção não determinada",
+    "Y35": "Intervenção legal",
+    "Y36": "Operações de guerra",
+    "Y40": "Efeitos adversos de antibióticos sistêmicos",
+    "Y41": "Efeitos adversos de outros antiinfecciosos e antiparasitários sistêmicos",
+    "Y42": "Efeitos adversos de hormônios e seus substitutos sintéticos e antagonistas",
+    "Y43": "Efeitos adversos de substâncias de ação primariamente sistêmica",
+    "Y44": "Efeitos adversos de substâncias farmacológicas que atuam primariamente sobre os elementos figurados do sangue",
+    "Y45": "Efeitos adversos de substâncias analgésicas, antipiréticas e antiinflamatórias",
+    "Y46": "Efeitos adversos de drogas anticonvulsivantes e antiparkinsonianas",
+    "Y47": "Efeitos adversos de sedativos, hipnóticos e tranquilizantes",
+    "Y48": "Efeitos adversos de anestésicos e gases terapêuticos",
+    "Y49": "Efeitos adversos de substâncias psicotrópicas, não classificadas em outra parte",
+    "Y50": "Efeitos adversos de estimulantes do sistema nervoso central, não classificados em outra parte",
+    "Y51": "Efeitos adversos de drogas que atuam primariamente sobre o sistema nervoso autônomo",
+    "Y52": "Efeitos adversos de substâncias que atuam primariamente sobre o aparelho cardiovascular",
+    "Y53": "Efeitos adversos de substâncias que atuam primariamente sobre o aparelho gastrointestinal",
+    "Y54": "Efeitos adversos de substâncias que atuam primariamente sobre o metabolismo da água e minerais",
+    "Y55": "Efeitos adversos de substâncias que atuam primariamente sobre os músculos lisos e esqueléticos e o aparelho respiratório",
+    "Y56": "Efeitos adversos de substâncias de uso tópico que atuam primariamente sobre a pele e as mucosas",
+    "Y57": "Efeitos adversos de outras drogas e medicamentos e das não especificadas",
+    "Y58": "Efeitos adversos de vacinas bacterianas",
+    "Y59": "Efeitos adversos de outras vacinas e substâncias biológicas e das não especificadas",
+    "Y60": "Corte, punção, perfuração ou hemorragia acidentais durante prestação de cuidados médicos e cirúrgicos",
+    "Y61": "Objeto estranho deixado acidentalmente no corpo durante a prestação de cuidados médicos e cirúrgicos",
+    "Y62": "Assepsia insuficiente durante a prestação de cuidados cirúrgicos e médicos",
+    "Y63": "Erros de dosagem durante a prestação de cuidados médicos e cirúrgicos",
+    "Y64": "Medicamentos ou substâncias biológicas contaminadas",
+    "Y65": "Outros acidentes durante a prestação de cuidados médicos e cirúrgicos",
+    "Y66": "Não administração de cuidado médico e cirúrgico",
+    "Y69": "Acidente não especificado durante a prestação de cuidado médico e cirúrgico",
+    "Y70": "Dispositivos de anestesiologia, associados a incidentes adversos",
+    "Y71": "Dispositivos cardiovasculares, associados a incidentes adversos",
+    "Y72": "Dispositivos utilizados em otorrinolaringologia, associados a incidentes adversos",
+    "Y73": "Dispositivos usados em gastroenterologia e em urologia, associados a incidentes adversos",
+    "Y74": "Dispositivos gerais de uso hospitalar ou pessoal, associados a incidentes adversos",
+    "Y75": "Dispositivos utilizados em neurologia, associados a incidentes adversos",
+    "Y76": "Dispositivos utilizados em obstetrícia e em ginecologia, associados a incidentes adversos",
+    "Y77": "Dispositivos utilizados em oftalmologia, associados a incidentes adversos",
+    "Y78": "Dispositivos utilizados em radiologia, associados a incidentes adversos",
+    "Y79": "Dispositivos ortopédicos, associados a incidentes adversos",
+    "Y80": "Dispositivos utilizados em medicina física (fisiatria), associados a incidentes adversos",
+    "Y81": "Dispositivos utilizados em cirurgia geral e plástica, associados a incidentes adversos",
+    "Y82": "Outros dispositivos associados a incidentes adversos e os não especificados",
+    "Y83": "Reação anormal em paciente ou complicação tardia, causadas por atos cirúrgicos e outros atos médicos",
+    "Y84": "Reação anormal em paciente ou complicação tardia, causadas por outros procedimentos médicos",
+    "Y85": "Seqüelas de acidentes de transporte",
+    "Y86": "Seqüelas de outros acidentes",
+    "Y87": "Seqüelas de lesão autoprovocada intencionalmente, de agressão e de fatos cuja intenção é indeterminada",
+    "Y88": "Seqüelas de cuidado médico ou cirúrgico considerados como a causa externa",
+    "Y89": "Seqüelas de outras causas externas",
+    "Y90": "Evidência de alcoolismo determinada por taxas de alcoolemia",
+    "Y91": "Evidência de alcoolismo determinada pelo nível da intoxicação",
+    "Y95": "Circunstância relativa às condições nosocomiais (hospitalares)",
+    "Y96": "Circunstância relativa às condições de trabalho",
+    "Y97": "Circunstâncias relativas a condições de poluição ambiental",
+    "Y98": "Circunstâncias relativas a condições do modo de vida",
     "Z00": "Exame geral e investigação de pessoas sem queixas ou diagnóstico relatado",
     "Z01": "Outros exames e investigações especiais de pessoas sem queixas ou diagnóstico relatado",
     "Z02": "Exame médico e consulta com finalidades administrativas",
@@ -6370,6 +6772,103 @@
     modalCidRegistrosOverlay.classList.remove("active");
   });
 
+  // ---- relatório (impressão/PDF e CSV) ----
+  function descricaoFiltroAtualCid(){
+    const grupo = document.getElementById("cidFiltroGrupo").value;
+    const filial = document.getElementById("cidFiltroFilial").value;
+    const nomeGrupo = grupo;
+    const nomeFilial = filial === "geral" ? "Geral (todas as filiais)" : (empresas.find(e => e.id === filial)?.razaoSocial || filial);
+    const botaoPeriodoAtivo = document.querySelector("#filtrosPeriodoCid .filtro-btn.active");
+    let periodoTexto = botaoPeriodoAtivo ? botaoPeriodoAtivo.textContent.trim() : "Todo o período";
+    if (botaoPeriodoAtivo && botaoPeriodoAtivo.dataset.periodo === "personalizado"){
+      const de = document.getElementById("cidDataInicio").value;
+      const ate = document.getElementById("cidDataFim").value;
+      periodoTexto = `Personalizado (${de ? formatarDataBR(de) : "?"} a ${ate ? formatarDataBR(ate) : "?"})`;
+    }
+    return { nomeGrupo, nomeFilial, periodoTexto };
+  }
+
+  function gerarRelatorioImpressao(){
+    const registros = registrosFiltradosAtuais();
+    if (registros.length === 0){
+      alert("Não há atestados nesse filtro para gerar relatório.");
+      return;
+    }
+    const { nomeGrupo, nomeFilial, periodoTexto } = descricaoFiltroAtualCid();
+    const agora = new Date();
+    const geradoEm = `${String(agora.getDate()).padStart(2,"0")}/${String(agora.getMonth()+1).padStart(2,"0")}/${agora.getFullYear()} às ${String(agora.getHours()).padStart(2,"0")}:${String(agora.getMinutes()).padStart(2,"0")}`;
+
+    const contagem = {};
+    registros.forEach(a => {
+      const cod = (a.cid_codigo || "").trim().toUpperCase();
+      contagem[cod] = (contagem[cod] || 0) + 1;
+    });
+    const ranking = Object.entries(contagem).sort((a, b) => b[1] - a[1]);
+    const total = registros.length;
+
+    const linhasTabela = ranking.map(([codigo, qtd]) => `
+      <tr>
+        <td style="font-weight:700;">${escapeHtml(codigo)}</td>
+        <td>${escapeHtml(descricaoCid(codigo) || "Descrição não catalogada")}</td>
+        <td style="text-align:center;">${qtd}</td>
+        <td style="text-align:center;">${((qtd / total) * 100).toFixed(1)}%</td>
+      </tr>
+    `).join("");
+
+    document.getElementById("areaImpressaoRelatorioCid").innerHTML = `
+      <div class="relatorio-cid-pagina">
+        <div class="relatorio-cid-cabecalho">
+          <div>
+            <div class="relatorio-cid-titulo">K A Carvalho Said · Departamento Pessoal</div>
+            <div class="relatorio-cid-sub">Relatório de Controle de CID</div>
+          </div>
+        </div>
+        <div class="relatorio-cid-meta">
+          <div><b>Grupo:</b> ${escapeHtml(nomeGrupo)}</div>
+          <div><b>Filial:</b> ${escapeHtml(nomeFilial)}</div>
+          <div><b>Período:</b> ${escapeHtml(periodoTexto)}</div>
+          <div><b>Total de atestados:</b> ${total}</div>
+        </div>
+        <table class="relatorio-cid-tabela">
+          <thead>
+            <tr><th>Código</th><th>Descrição</th><th style="text-align:center;">Qtd.</th><th style="text-align:center;">%</th></tr>
+          </thead>
+          <tbody>${linhasTabela}</tbody>
+        </table>
+        <div class="relatorio-cid-rodape">Relatório gerado em ${geradoEm} — Central de Demandas</div>
+      </div>
+    `;
+    window.print();
+  }
+
+  function exportarCsvCid(){
+    const registros = registrosFiltradosAtuais();
+    if (registros.length === 0){
+      alert("Não há atestados nesse filtro para exportar.");
+      return;
+    }
+    const linhas = [["Código CID", "Descrição", "Empresa", "Data do atestado"]];
+    registros.forEach(a => {
+      const codigo = (a.cid_codigo || "").trim().toUpperCase();
+      const empresaNome = empresas.find(e => e.id === a.empresa_id)?.razaoSocial || "";
+      const data = a.data_atestado ? formatarDataBR(a.data_atestado) : "";
+      linhas.push([codigo, descricaoCid(codigo) || "Descrição não catalogada", empresaNome, data]);
+    });
+    const csv = linhas.map(linha => linha.map(campo => `"${String(campo).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `relatorio_cid_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("btnCidRelatorioPdf").addEventListener("click", gerarRelatorioImpressao);
+  document.getElementById("btnCidExportarCsv").addEventListener("click", exportarCsvCid);
+
   document.getElementById("btnCidUpload").addEventListener("click", () => {
     const filial = document.getElementById("cidFiltroFilial").value;
     if (filial === "geral"){
@@ -6392,15 +6891,20 @@
   });
 
   // OCR costuma confundir a letra inicial do CID com um dígito parecido
-  const MAPA_DIGITO_PARA_LETRA_CID = { "0": "O", "1": "I", "2": "Z", "5": "S", "6": "G", "8": "B" };
+  const MAPA_DIGITO_PARA_LETRA_CID = { "0": "O", "1": "I", "2": "Z", "3": "J", "5": "S", "6": "G", "8": "B" };
 
   // OCR também pode confundir dígitos DENTRO do código com letras parecidas (ex: 0/Q, 9/I) —
   // esse mapa é usado só quando já sabemos que aquela posição deveria ser um dígito.
-  const MAPA_LETRA_PARA_DIGITO_CID = { "O": "0", "Q": "0", "D": "0", "I": "9", "L": "1", "Z": "2", "S": "5", "G": "6", "B": "8" };
+  const MAPA_LETRA_PARA_DIGITO_CID = { "O": "0", "Q": "0", "D": "0", "I": "9", "L": "1", "Z": "2", "S": "9", "G": "6", "B": "8" };
 
   function corrigirDigito(caractere){
     if (/\d/.test(caractere)) return caractere;
     return MAPA_LETRA_PARA_DIGITO_CID[caractere.toUpperCase()] || caractere;
+  }
+
+  function corrigirLetra(caractere){
+    if (/[A-Z]/i.test(caractere)) return caractere.toUpperCase();
+    return MAPA_DIGITO_PARA_LETRA_CID[caractere] || caractere;
   }
 
   function extrairCidDoTexto(texto){
@@ -6428,16 +6932,28 @@
     // formato usado por alguns convênios (ex: Hapvida): o código aparece sozinho numa linha,
     // sem "CID" na frente e sem ponto — ex: "H830" (= H83.0), geralmente perto de um rótulo
     // "Código da Doença" logo abaixo. Prioriza isso perto desse rótulo quando existir.
-    // Tolera também letras que o OCR pode confundir com dígitos nessa posição (ex: 0/O/Q/D,
-    // 1/I/L, 2/Z, 5/S, 6/G, 8/B) — só faz essa correção aqui, bem perto do rótulo, onde dá
-    // pra confiar que aquilo é mesmo o código.
-    const pertoDoRotuloDepois = texto.match(/\b([A-TV-Z])([0-9OQDILZSGB])([0-9OQDILZSGB])([0-9OQDILZSGB])\b[^A-Za-z0-9]{0,40}C[óo]digo\s*d[ae]\s*Doen[çc]a/i);
-    if (pertoDoRotuloDepois) return montarCodigo(pertoDoRotuloDepois[1], corrigirDigito(pertoDoRotuloDepois[2]), corrigirDigito(pertoDoRotuloDepois[3]), corrigirDigito(pertoDoRotuloDepois[4]));
+
+    // primeiro: caso o OCR tenha inserido uma letra a mais bem no meio (ex: "HI10" em vez de
+    // "H10" — o "I" ali é ruído, não substitui um dígito) — só entra aqui se os dígitos depois
+    // dessa letra extra já vierem "limpos" (dígitos de verdade), pra não arriscar demais
+    const pertoRotuloComLetraExtra = texto.match(/\b([A-TV-Z])\s*[A-Z]\s*(\d{2,3})\b[^A-Za-z0-9]{0,40}C[óo]digo\s*d[ae]\s*Doen[çc]a/i);
+    if (pertoRotuloComLetraExtra){
+      const digitos = pertoRotuloComLetraExtra[2];
+      return montarCodigo(pertoRotuloComLetraExtra[1], digitos[0], digitos[1], digitos.length === 3 ? digitos[2] : null);
+    }
+
+    // tolera espaços entre TODOS os caracteres (inclusive entre a letra e os números — ex:
+    // "J 11"), vírgula no lugar do ponto, e letras/dígitos parecidos confundidos pelo OCR
+    // tanto na primeira posição (a letra) quanto nas seguintes (os números) — só faz esse
+    // ajuste bem perto do rótulo, onde dá pra confiar que aquilo é mesmo o código.
+    const classeTolerante = "[A-TV-Z0-9OQDILZSGB]";
+    const pertoDoRotuloDepois = texto.match(new RegExp(`\\b(${classeTolerante})\\s*(${classeTolerante})\\s*(${classeTolerante})\\s*(${classeTolerante})\\b[^A-Za-z0-9]{0,40}C[óo]digo\\s*d[ae]\\s*Doen[çc]a`, "i"));
+    if (pertoDoRotuloDepois) return montarCodigo(corrigirLetra(pertoDoRotuloDepois[1]), corrigirDigito(pertoDoRotuloDepois[2]), corrigirDigito(pertoDoRotuloDepois[3]), corrigirDigito(pertoDoRotuloDepois[4]));
 
     // mesma ideia, mas pra código de só 3 caracteres (sem subcategoria) perto do mesmo rótulo —
     // ex: "J00" que o OCR pode ler como "Joo" (0 virando "o" minúsculo)
-    const pertoDoRotuloDepoisTresChars = texto.match(/\b([A-TV-Z])([0-9OQDILZSGB])([0-9OQDILZSGB])\b[^A-Za-z0-9]{0,40}C[óo]digo\s*d[ae]\s*Doen[çc]a/i);
-    if (pertoDoRotuloDepoisTresChars) return montarCodigo(pertoDoRotuloDepoisTresChars[1], corrigirDigito(pertoDoRotuloDepoisTresChars[2]), corrigirDigito(pertoDoRotuloDepoisTresChars[3]), null);
+    const pertoDoRotuloDepoisTresChars = texto.match(new RegExp(`\\b(${classeTolerante})\\s*(${classeTolerante})\\s*(${classeTolerante})\\b[^A-Za-z0-9]{0,40}C[óo]digo\\s*d[ae]\\s*Doen[çc]a`, "i"));
+    if (pertoDoRotuloDepoisTresChars) return montarCodigo(corrigirLetra(pertoDoRotuloDepoisTresChars[1]), corrigirDigito(pertoDoRotuloDepoisTresChars[2]), corrigirDigito(pertoDoRotuloDepoisTresChars[3]), null);
 
     // mesmo formato de 4 caracteres sem ponto, mas sem o rótulo por perto — ainda vale
     // mais que um código de 3 caracteres solto, já que é mais específico
@@ -6647,6 +7163,8 @@
   verificarSessao();
 
 </script>
+
+<div id="areaImpressaoRelatorioCid"></div>
 
 </body>
 </html>
