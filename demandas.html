@@ -1799,6 +1799,11 @@
               <div class="form-hint">Deixe em branco se a empresa não faz parte de um grupo com outras filiais.</div>
             </div>
             <div class="form-group">
+              <label for="campoMesEntrada">Cliente desde (mês/ano)</label>
+              <input type="month" id="campoMesEntrada">
+              <div class="form-hint">Meses anteriores a este não aparecem como obrigação pendente para essa empresa. Deixe em branco se não quiser essa restrição.</div>
+            </div>
+            <div class="form-group">
               <label>Obrigações contratadas</label>
               <div class="contratos-grid">
                 <label class="contrato-item"><input type="checkbox" id="campoContratoAdiantamento" checked> Adiantamento</label>
@@ -2087,6 +2092,18 @@
     if (o.vigenciaAno == null || o.vigenciaMes == null) return true;
     if (ano > o.vigenciaAno) return true;
     if (ano === o.vigenciaAno && mesIndex >= o.vigenciaMes) return true;
+    return false;
+  }
+
+  // uma empresa só entra nas obrigações/estatísticas de um mês se já era cliente naquele mês —
+  // sem "mesEntrada" definido (empresa antiga, cadastrada antes dessa funcionalidade existir),
+  // vale pra qualquer mês, mantendo o comportamento de sempre
+  function empresaVigenteNoMes(emp, ano, mesIndex){
+    if (!emp.mesEntrada) return true;
+    const [entradaAno, entradaMes] = emp.mesEntrada.split("-").map(Number);
+    const entradaMesIndex = entradaMes - 1;
+    if (ano > entradaAno) return true;
+    if (ano === entradaAno && mesIndex >= entradaMesIndex) return true;
     return false;
   }
 
@@ -2772,6 +2789,7 @@
       ativa: row.ativa !== false,
       tipoCliente: row.tipo_cliente || "pj",
       grupoEmpresarial: row.grupo_empresarial || "",
+      mesEntrada: row.data_entrada ? row.data_entrada.slice(0, 7) : null,
       contratos: {
         adiantamento: row.contrata_adiantamento !== false,
         creditotrabalhador: row.contrata_creditotrabalhador !== false,
@@ -3180,6 +3198,7 @@
     const grupoSelecionadoObrig = filtroGrupoEmpresarialObrigacoesEl.value;
     const empresasFiltradas = empresas.filter(emp => {
       if (!emp.ativa) return false;
+      if (!empresaVigenteNoMes(emp, currentViewDate.year, currentViewDate.month)) return false;
       if (!empresaCombinaComBusca(emp, textoBusca)) return false;
       if (filtroTipoCliente !== "todos" && emp.tipoCliente !== filtroTipoCliente) return false;
       if (grupoSelecionadoObrig === "todos"){
@@ -3270,7 +3289,7 @@
     const cabecalho = ["Código", "Empresa", "CNPJ/CPF", ...obrigacoesConfig.map(o => o.label), "Progresso"];
     const linhas = [cabecalho];
 
-    empresas.filter(emp => emp.ativa).forEach(emp => {
+    empresas.filter(emp => emp.ativa && empresaVigenteNoMes(emp, currentViewDate.year, currentViewDate.month)).forEach(emp => {
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       const linha = [emp.codigo, emp.razaoSocial, emp.cnpj];
       obrigacoesConfig.forEach(o => {
@@ -3343,7 +3362,7 @@
   function calcularResumoObrigacoesMes(){
     const estadoMes = obterEstadoMes();
     let total = 0, concluidas = 0, atrasadas = 0;
-    empresas.filter(emp => emp.ativa).forEach(emp => {
+    empresas.filter(emp => emp.ativa && empresaVigenteNoMes(emp, currentViewDate.year, currentViewDate.month)).forEach(emp => {
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       obrigacoesConfig.forEach(o => {
         if (!obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month)) return;
@@ -3417,7 +3436,7 @@
 
     return mesesAlvo.map(({ ano, mes, chave }) => {
       let total = 0, concluidas = 0;
-      empresas.filter(e => e.ativa).forEach(emp => {
+      empresas.filter(e => e.ativa && empresaVigenteNoMes(e, ano, mes)).forEach(emp => {
         obrigacoesConfig.forEach(o => {
           if (!obrigacaoVigenteNoMes(o, ano, mes)) return;
           if (!emp.contratos[o.chave]) return;
@@ -3538,7 +3557,7 @@
     let atrasadas = 0;
     let vencendoEmBreve = 0;
 
-    empresas.filter(emp => emp.ativa).forEach(emp => {
+    empresas.filter(emp => emp.ativa && empresaVigenteNoMes(emp, currentViewDate.year, currentViewDate.month)).forEach(emp => {
       const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
       obrigacoesConfig.forEach(o => {
         if (!obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month)) return;
@@ -3588,7 +3607,7 @@
       if (!obrigacaoVigenteNoMes(o, currentViewDate.year, currentViewDate.month)) return;
       if (o.chave === "adiantamento"){
         const gruposPorDia = {};
-        empresas.filter(emp => emp.ativa).forEach(emp => {
+        empresas.filter(emp => emp.ativa && empresaVigenteNoMes(emp, currentViewDate.year, currentViewDate.month)).forEach(emp => {
           if (!emp.contratos.adiantamento) return;
           const dia = emp.diaAdiantamento || 20;
           if (!gruposPorDia[dia]) gruposPorDia[dia] = [];
@@ -3617,10 +3636,10 @@
 
       const dataVenc = dataVencimentoObrigacao(o);
       const diff = diffDiasParaHoje(dataVenc);
-      const totalContratantes = empresas.filter(emp => emp.ativa && emp.contratos[o.chave]).length;
+      const totalContratantes = empresas.filter(emp => emp.ativa && emp.contratos[o.chave] && empresaVigenteNoMes(emp, currentViewDate.year, currentViewDate.month)).length;
       if (totalContratantes === 0) return;
       const pendentesEmpresas = empresas.filter(emp => {
-        if (!emp.ativa || !emp.contratos[o.chave]) return false;
+        if (!emp.ativa || !emp.contratos[o.chave] || !empresaVigenteNoMes(emp, currentViewDate.year, currentViewDate.month)) return false;
         const estadoEmpresa = estadoMes[emp.id] || estadoVazioParaEmpresa();
         return !(estadoEmpresa[o.chave] && estadoEmpresa[o.chave].concluido);
       }).length;
@@ -3772,6 +3791,7 @@
       campoEmpresaCodigoSistema.value = emp.codigo;
       document.getElementById("campoTipoCliente").value = emp.tipoCliente || "pj";
       document.getElementById("campoGrupoEmpresarial").value = emp.grupoEmpresarial || "";
+      document.getElementById("campoMesEntrada").value = emp.mesEntrada || "";
       document.getElementById("campoContratoAdiantamento").checked = emp.contratos.adiantamento;
       document.getElementById("campoContratoCreditoTrabalhador").checked = emp.contratos.creditotrabalhador;
       document.getElementById("campoContratoFopag").checked = emp.contratos.folha;
@@ -3784,6 +3804,9 @@
     } else {
       empresaEmEdicaoId = null;
       modalEmpresaTitulo.textContent = "Nova empresa";
+      // por padrão, uma empresa nova já entra com "cliente desde" no mês atual, pra não
+      // acumular obrigação pendente de meses em que ela ainda nem era cliente
+      document.getElementById("campoMesEntrada").value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
     }
     modalEmpresaOverlay.classList.add("active");
     campoEmpresaNome.focus();
@@ -3858,7 +3881,8 @@
       contrata_vtvrponto: document.getElementById("campoContratoVtvrponto").checked,
       dia_adiantamento: Number(document.getElementById("campoDiaAdiantamento").value),
       tipo_cliente: document.getElementById("campoTipoCliente").value,
-      grupo_empresarial: document.getElementById("campoGrupoEmpresarial").value.trim() || null
+      grupo_empresarial: document.getElementById("campoGrupoEmpresarial").value.trim() || null,
+      data_entrada: document.getElementById("campoMesEntrada").value ? `${document.getElementById("campoMesEntrada").value}-01` : null
     };
 
     const btnSalvar = formEmpresa.querySelector("button[type=submit]");
