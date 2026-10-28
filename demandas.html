@@ -2933,6 +2933,21 @@
   document.getElementById("mesAnterior").addEventListener("click", () => mudarMes(-1));
   document.getElementById("mesProximo").addEventListener("click", () => mudarMes(1));
 
+  // o Supabase devolve no máximo 1000 linhas por consulta; esta função busca em páginas até acabar
+  async function buscarTodasAsLinhas(tabela, aplicarFiltro){
+    const todas = [];
+    const TAMANHO_PAGINA = 1000;
+    for (let inicio = 0; ; inicio += TAMANHO_PAGINA){
+      let consulta = supabaseClient.from(tabela).select("*");
+      if (aplicarFiltro) consulta = aplicarFiltro(consulta);
+      const { data, error } = await consulta.order("id", { ascending: true }).range(inicio, inicio + TAMANHO_PAGINA - 1);
+      if (error) return { data: null, error };
+      todas.push(...data);
+      if (data.length < TAMANHO_PAGINA) break;
+    }
+    return { data: todas, error: null };
+  }
+
   // ---------- BACKUP ----------
   async function exportarBackup(){
     const btn = document.getElementById("btnExportarBackup");
@@ -2943,7 +2958,7 @@
     try {
       const [empresasRes, obrigacoesRes, solicitacoesRes] = await Promise.all([
         supabaseClient.from("empresas").select("*"),
-        supabaseClient.from("obrigacoes_estado").select("*"),
+        buscarTodasAsLinhas("obrigacoes_estado"),
         supabaseClient.from("solicitacoes").select("*")
       ]);
 
@@ -3428,7 +3443,9 @@
     }
 
     const chaves = mesesAlvo.map(m => m.chave);
-    const { data, error } = await supabaseClient.from("obrigacoes_estado").select("*").in("mes_ano", chaves);
+    // somando 6 meses passa de 1000 linhas; sem paginar, os meses mais recentes ficavam
+    // quase vazios (mês concluído aparecia com 13%)
+    const { data, error } = await buscarTodasAsLinhas("obrigacoes_estado", q => q.in("mes_ano", chaves));
     if (error){
       console.error(error);
       return [];
@@ -3870,6 +3887,29 @@
       return;
     }
 
+    // normaliza o valor do campo "Cliente desde" pra sempre virar uma data ISO (AAAA-MM-01)
+    // antes de mandar pro banco. Um <input type="month"> normal já devolve "AAAA-MM" em
+    // qualquer navegador, mas em alguns casos reais (autocomplete do navegador colando um
+    // valor antigo no formato "MM/AAAA", por exemplo) o valor pode vir fora do padrão — e
+    // mandar isso direto pro Postgres quebra o salvamento (coluna "date") sem avisar nada
+    // de útil pro usuário. Então validamos aqui e damos uma mensagem clara se não der pra entender.
+    function normalizarMesEntrada(valorBruto){
+      const valor = (valorBruto || "").trim();
+      if (!valor) return { ok: true, valor: null };
+      let m = valor.match(/^(\d{4})-(\d{2})$/); // AAAA-MM (padrão do <input type="month">)
+      if (m) return { ok: true, valor: `${m[1]}-${m[2]}-01` };
+      m = valor.match(/^(\d{2})[/-](\d{4})$/); // MM/AAAA ou MM-AAAA
+      if (m) return { ok: true, valor: `${m[2]}-${m[1]}-01` };
+      return { ok: false, valor: null };
+    }
+
+    const mesEntradaNormalizado = normalizarMesEntrada(document.getElementById("campoMesEntrada").value);
+    if (!mesEntradaNormalizado.ok){
+      hintCodigoEmpresa.textContent = "O campo \"Cliente desde\" ficou com um valor inválido. Apague o campo e selecione o mês/ano de novo.";
+      hintCodigoEmpresa.classList.add("alerta");
+      return;
+    }
+
     const contratosPayload = {
       contrata_adiantamento: document.getElementById("campoContratoAdiantamento").checked,
       contrata_creditotrabalhador: document.getElementById("campoContratoCreditoTrabalhador").checked,
@@ -3882,7 +3922,7 @@
       dia_adiantamento: Number(document.getElementById("campoDiaAdiantamento").value),
       tipo_cliente: document.getElementById("campoTipoCliente").value,
       grupo_empresarial: document.getElementById("campoGrupoEmpresarial").value.trim() || null,
-      data_entrada: document.getElementById("campoMesEntrada").value ? `${document.getElementById("campoMesEntrada").value}-01` : null
+      data_entrada: mesEntradaNormalizado.valor
     };
 
     const btnSalvar = formEmpresa.querySelector("button[type=submit]");
